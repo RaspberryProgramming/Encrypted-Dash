@@ -24,8 +24,13 @@ def writeFrame(frame, filepath):
     data = data.getvalue() # get image byte data
     
     # Load the private key
-    recipient_key = RSA.import_key(open("public.pem").read())
-    session_key = get_random_bytes(16)
+    try:
+        recipient_key = RSA.import_key(open("public.pem").read())
+        session_key = get_random_bytes(16)
+    except FileNotFoundError:
+        print("[!] Please Generate keys with genkey.py")
+        import sys
+        sys.exit(0)
 
     # Encrypt the session key with the public RSA key
     cipher_rsa = PKCS1_OAEP.new(recipient_key)
@@ -50,6 +55,7 @@ fontScale              = 0.30
 fontColor              = (255,255,255)
 lineType               = 2
 
+count = 0 # Keeps a count of how many frames have been recorded
 
 # Check if the output destination exists
 if not (os.path.exists(destination)):
@@ -100,7 +106,8 @@ while(True):
 
         # Write the frame to a file
         writeFrame(frame, filepath)
-
+        count += 1
+        print("%d written" % (count))
     else:
         break
 
