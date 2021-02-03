@@ -32,3 +32,6 @@ def writeNewKeys():
     file_out = open("public.pem", "wb")
     file_out.write(public_key)
     file_out.close()
+
+if __name__ in '__main__':
+    writeNewKeys()
