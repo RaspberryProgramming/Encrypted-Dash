@@ -1,5 +1,4 @@
-python-opencv
+opencv-python
 numpy
 pillow
 pycryptodome
-shutil
