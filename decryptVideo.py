@@ -8,6 +8,23 @@ import os
 import sys
 import sr
 
+def getDimension(data):
+   # open image for reading in binary mode
+
+   # read the 2 bytes
+   a = data[163:165]
+
+   # calculate height
+   height = (a[0] << 8) + a[1]
+
+   # next 2 bytes is width
+   a = data[165:167]
+
+   # calculate width
+   width = (a[0] << 8) + a[1]
+
+   return [height, width]
+
 directory = "output"
 
 fps = 10.0 # Fps that the output video will be set to
@@ -51,6 +68,8 @@ for x in recordings: # For each file
                 # Decrypt the data with the AES session key
                 cipher_aes = AES.new(session_key, AES.MODE_EAX, nonce)
                 data = cipher_aes.decrypt_and_verify(ciphertext, tag)
+                
+                #print(getDimension(data)) # TODO: ADD INITIAL DIMENSION DETECTION
 
                 # Convert jpeg data to numpy array
                 nparr = np.frombuffer(data, np.int8)
