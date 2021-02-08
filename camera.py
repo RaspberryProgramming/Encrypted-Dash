@@ -43,12 +43,13 @@ def writeFrame(frame, filepath):
     file_out = open(filepath, "wb") # Open the file session, using wb to write byte data
     [ file_out.write(x) for x in (enc_session_key, cipher_aes.nonce, tag, ciphertext) ]
     file_out.close() # Close the write session and save to disk
+    return len(data)
 
 destination = "output" # Folder which the frames will be stored
 
 
 dimensions = (1280, 720) # 720p resolution for recording video
-minFree = 10.0 # Minimum Free space left on harddisk in GB
+minFree = 5.0 # Minimum Free space left on harddisk in GB
 font                   = cv2.FONT_HERSHEY_SIMPLEX
 bottomLeftCornerOfText = (20,20)
 fontScale              = 0.30
@@ -97,17 +98,23 @@ while(True):
 
 
         if ((free // (2**30)) < minFree): # Check if there is enough space on the harddrive
-            fname = fr.getFirst() # Retrieve the oldest frame
-            os.remove("output/" + fname) # Delete the oldest frame
-            fr.deleteFirst() # Remove oldest frame from the Frames Object
+            while ((free // 1073741824) < minFree): #Delete enough files to have correct storage
 
-        
+                fname = fr.popFirst() # Retrieve and remove the oldest frame
+                os.remove(destination + "/" + fname) # Delete the oldest frame
+
+                total, used, free = shutil.disk_usage("./") # Update storage Stats
+            print(free)
+
         filepath = destination + "/" + str(now) + ".ev" # Generate file path to write the current frame
 
         # Write the frame to a file
-        writeFrame(frame, filepath)
+        start = time.time()
+        fsize = writeFrame(frame, filepath)
+        stop = time.time()
         count += 1
-        print("%d written" % (count))
+        speed = (fsize/1000)/(stop-start)
+        print("%d written at %d KB/s" % (count, speed), end="\r")
     else:
         break
 
