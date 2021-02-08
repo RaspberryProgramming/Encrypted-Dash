@@ -6,19 +6,18 @@ from PIL import Image
 import io
 import os
 import sys
+import sr
 
 directory = "output"
 
 fps = 10.0 # Fps that the output video will be set to
-dimensions = (1280, 720) # 720p resolution for the output video
-
-# Create video writer session
-fourcc = cv2.VideoWriter_fourcc(*'XVID')
-out = cv2.VideoWriter('output.avi', fourcc, fps, dimensions) # output.avi is the output file
+dimensions = (640, 480) # 720p resolution for the output video (1280,720)
 
 # Get a list of files in the directory
 files = os.listdir(directory)
 files.sort()
+
+recordings = sr.splitRecordings(files)
 
 numOfFiles = len(files) # Helps estimate how far along the program is at decrypting the video
 
@@ -26,44 +25,50 @@ numOfFiles = len(files) # Helps estimate how far along the program is at decrypt
 private_key = RSA.import_key(open("private.pem").read())
 cipher_rsa = PKCS1_OAEP.new(private_key)
 
-for i in range(numOfFiles): # For each file
-    f = files[i]
-    if f.split(".")[-1] == "ev": # check if the file has the correct extension
+frameCount = 0 # Used for approximating progress
 
-        file_in = open(directory + "/" + f, "rb") # Read the file as byte data
+for x in recordings: # For each file
+    # Create video writer session
+    rname = x[0][:-4] + ".avi"
+    print(rname + " "*20)
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    out = cv2.VideoWriter(rname, fourcc, fps, dimensions) # output.avi is the output file
 
-        # Retrieve session key, tag, ciphertext and nonce from file
-        enc_session_key, nonce, tag, ciphertext = \
-        [ file_in.read(x) for x in (private_key.size_in_bytes(), 16, 16, -1) ]
+    for f in x:
+        frameCount += 1
+        if f.split(".")[-1] == "ev": # check if the file has the correct extension
 
-        try:
-            # Decrypt the session key
-            session_key = cipher_rsa.decrypt(enc_session_key)
+            file_in = open(directory + "/" + f, "rb") # Read the file as byte data
 
-            # Decrypt the data with the AES session key
-            cipher_aes = AES.new(session_key, AES.MODE_EAX, nonce)
-            data = cipher_aes.decrypt_and_verify(ciphertext, tag)
+            # Retrieve session key, tag, ciphertext and nonce from file
+            enc_session_key, nonce, tag, ciphertext = \
+            [ file_in.read(x) for x in (private_key.size_in_bytes(), 16, 16, -1) ]
 
-            # Convert jpeg data to numpy array
-            nparr = np.frombuffer(data, np.int8)
-            frame = cv2.imdecode(nparr, flags=1) # decode numpy array
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # convert frame to RGB
-            out.write(frame) # Write the frame to the output file
+            try:
+                # Decrypt the session key
+                session_key = cipher_rsa.decrypt(enc_session_key)
 
-            # Display current progress
-            print("Decrypted %d%% or %i/%i of frames" % ((i/numOfFiles)*100, i, numOfFiles), end="\r")
+                # Decrypt the data with the AES session key
+                cipher_aes = AES.new(session_key, AES.MODE_EAX, nonce)
+                data = cipher_aes.decrypt_and_verify(ciphertext, tag)
 
-        except KeyboardInterrupt: # Detects when user ends the program
-            print("[*] Video Decryption ended early")
-            out.release() # Release the video writer
+                # Convert jpeg data to numpy array
+                nparr = np.frombuffer(data, np.int8)
+                frame = cv2.imdecode(nparr, flags=1) # decode numpy array
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # convert frame to RGB
+                out.write(frame) # Write the frame to the output file
 
-            import sys
-            sys.exit(0)
+                # Display current progress
+                print("Decrypted %d%% or %i/%i of frames" % ((frameCount/numOfFiles)*100, frameCount, numOfFiles), end="\r")
 
-        except ValueError as e: # Detects when a frame fails to decrypt
-            print("\n[!] Failed to decrypt frame %s\n" % (i))
-        
-        
+            except KeyboardInterrupt: # Detects when user ends the program
+                print("[*] Video Decryption ended early")
+                out.release() # Release the video writer
 
+                import sys
+                sys.exit(0)
 
-out.release() # Release the video writer
+            except ValueError as e: # Detects when a frame fails to decrypt
+                print("\n[!] Failed to decrypt frame %s\n" % (i))
+
+    out.release() # Release the video writer
