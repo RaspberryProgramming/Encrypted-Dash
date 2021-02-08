@@ -48,7 +48,7 @@ def writeFrame(frame, filepath):
 destination = "output" # Folder which the frames will be stored
 
 
-dimensions = (1280, 720) # 720p resolution for recording video
+dimensions = (640, 480) # 720p resolution for recording video (1280, 720)
 minFree = 5.0 # Minimum Free space left on harddisk in GB
 font                   = cv2.FONT_HERSHEY_SIMPLEX
 bottomLeftCornerOfText = (20,20)
