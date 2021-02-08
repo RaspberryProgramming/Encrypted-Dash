@@ -61,3 +61,13 @@ class Frames:
 
     def getFirst(self):
         return self.first.filename
+
+    def popFirst(self):
+        filename = self.first.filename
+        self.deleteFirst()
+        return filename
+
+    def popLast(self):
+        filename = self.last.filename
+        self.deleteLast()
+        return filename
