@@ -30,24 +30,59 @@ directory = "output"
 fps = 10.0 # Fps that the output video will be set to
 dimensions = (640, 480) # 720p resolution for the output video (1280,720)
 
+# Retrieve the private key
+private_key = RSA.import_key(open("private.pem").read())
+cipher_rsa = PKCS1_OAEP.new(private_key)
+
 # Get a list of files in the directory
 files = os.listdir(directory)
 files.sort()
 
 recordings = sr.splitRecordings(files)
 
-numOfFiles = len(files) # Helps estimate how far along the program is at decrypting the video
-
-# Retrieve the private key
-private_key = RSA.import_key(open("private.pem").read())
-cipher_rsa = PKCS1_OAEP.new(private_key)
-
 frameCount = 0 # Used for approximating progress
 
-for x in recordings: # For each file
+selected = []
+
+while (len(selected) < 1):
+
+    print("Recordings:\n")
+    for x in range(len(recordings)): # For each file
+        rname = recordings[x][0][:-4]
+        print("[%i] %s" %(x,rname))
+
+    print("Please select one or more recordings. Type A for all")
+    print("or type the number of the recording you'd like to decrypt")
+    print("If you'd like to decrypt multiple, type in each with a comma")
+    print("between like so")
+    print("'1,5,9'")
+    print("Recordings:", end="")
+
+    returnedText = input()
+
+    if returnedText in ["A", "a", "All", "ALL"]:
+        selected  = [i for i in range(len(recordings))]
+    else:
+        try:
+            for s in returnedText.split(','):
+
+                selected.append(int(s))
+        except:
+            print("Input not formatted correctly")
+            selected = []
+
+numOfFiles = 0
+
+for x in selected:
+    numOfFiles += len(recordings[x])
+
+for i in selected: # For each file
     # Create video writer session
+    x = recordings[i]
     rname = x[0][:-4] + ".avi"
     print(rname + " "*20)
+
+    # Create video writer session
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
     out = cv2.VideoWriter(rname, fourcc, fps, dimensions) # output.avi is the output file
 
