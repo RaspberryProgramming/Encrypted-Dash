@@ -88,6 +88,6 @@ for x in recordings: # For each file
                 sys.exit(0)
 
             except ValueError as e: # Detects when a frame fails to decrypt
-                print("\n[!] Failed to decrypt frame %s\n" % (i))
+                print("\n[!] Failed to decrypt frame %s\n" % (f))
 
     out.release() # Release the video writer
