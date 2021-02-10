@@ -11,6 +11,10 @@ import frames
 import shutil
 import os
 
+###########################################
+# Functions                               #
+###########################################
+
 def writeFrame(frame, filepath):
     """
     Encrypts and writes the frame to a file. The function uses
@@ -45,18 +49,25 @@ def writeFrame(frame, filepath):
     file_out.close() # Close the write session and save to disk
     return len(data)
 
+######################################################
+# Settings                                           #
+######################################################
+
 destination = "output" # Folder which the frames will be stored
 
+dimensions = (1920, 1080) # Sets the max resolution for recording video
+minFree = 2.0 # Minimum Free space left on harddisk in GB
 
-dimensions = (640, 480) # 720p resolution for recording video (1280, 720)
-minFree = 5.0 # Minimum Free space left on harddisk in GB
+# Settings for any text added to frames
 font                   = cv2.FONT_HERSHEY_SIMPLEX
 bottomLeftCornerOfText = (20,20)
 fontScale              = 0.30
 fontColor              = (255,255,255)
 lineType               = 2
 
-count = 0 # Keeps a count of how many frames have been recorded
+######################################################
+# Preparations                                       #
+######################################################
 
 # Check if the output destination exists
 if not (os.path.exists(destination)):
@@ -72,6 +83,11 @@ fr = frames.Frames() # Frames class object is used to store a queue of frames
 for f in files: # Put each file into the Frames object
     fr.append(f)
 
+count = 0 # Keeps a count of how many frames have been recorded
+
+#####################################################
+# Running the Code                                  #
+#####################################################
 cap = cv2.VideoCapture(0) # Start camera capture session
 
 while(True):
