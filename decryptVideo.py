@@ -9,6 +9,11 @@ import sys
 import sr
 
 def getDimension(data):
+   """
+   Using given jpeg data getDimension will calculate the dimensions of the image.
+   data: JPG byte data
+   return: [height, width]
+   """
    # open image for reading in binary mode
 
    # read the 2 bytes
@@ -23,12 +28,35 @@ def getDimension(data):
    # calculate width
    width = (a[0] << 8) + a[1]
 
-   return [height, width]
+   return (width, height)
+
+def decrypt(data, private_key):
+    """
+    Decrypts jpg data using a given private key
+
+    data: encrypted jpg byte data
+    private_key: private key used to decrypt jpg data
+    return: jpg byte data
+    """
+
+    # Retrieve session key, tag, ciphertext and nonce from file
+    enc_session_key, nonce, tag, ciphertext = \
+    [ file_in.read(x) for x in (private_key.size_in_bytes(), 16, 16, -1) ]
+
+
+    # Decrypt the session key
+    session_key = cipher_rsa.decrypt(enc_session_key)
+
+    # Decrypt the data with the AES session key
+    cipher_aes = AES.new(session_key, AES.MODE_EAX, nonce)
+    data = cipher_aes.decrypt_and_verify(ciphertext, tag)
+
+    return data
 
 directory = "output"
 
 fps = 10.0 # Fps that the output video will be set to
-dimensions = (640, 480) # 720p resolution for the output video (1280,720)
+#dimensions = (640, 480) # 720p resolution for the output video (1280,720)
 
 # Retrieve the private key
 private_key = RSA.import_key(open("private.pem").read())
@@ -82,6 +110,11 @@ for i in selected: # For each file
     rname = x[0][:-4] + ".avi"
     print(rname + " "*20)
 
+    file_in = open(directory + "/" + x[0], "rb") # Read the file as byte data
+
+    dimensions = getDimension(decrypt(file_in, private_key)) # Get dimension of given recording
+    print(dimensions)
+
     # Create video writer session
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
     out = cv2.VideoWriter(rname, fourcc, fps, dimensions) # output.avi is the output file
@@ -92,17 +125,8 @@ for i in selected: # For each file
 
             file_in = open(directory + "/" + f, "rb") # Read the file as byte data
 
-            # Retrieve session key, tag, ciphertext and nonce from file
-            enc_session_key, nonce, tag, ciphertext = \
-            [ file_in.read(x) for x in (private_key.size_in_bytes(), 16, 16, -1) ]
-
             try:
-                # Decrypt the session key
-                session_key = cipher_rsa.decrypt(enc_session_key)
-
-                # Decrypt the data with the AES session key
-                cipher_aes = AES.new(session_key, AES.MODE_EAX, nonce)
-                data = cipher_aes.decrypt_and_verify(ciphertext, tag)
+                data = decrypt(file_in, private_key) # Decrypt the file data
                 
                 #print(getDimension(data)) # TODO: ADD INITIAL DIMENSION DETECTION
 
@@ -110,6 +134,7 @@ for i in selected: # For each file
                 nparr = np.frombuffer(data, np.int8)
                 frame = cv2.imdecode(nparr, flags=1) # decode numpy array
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # convert frame to RGB
+
                 out.write(frame) # Write the frame to the output file
 
                 # Display current progress
