@@ -1,6 +1,18 @@
 # Encrypted-Dash
 This programmed is designed to let you create a dash cam that encrypts the recorded video.
 
+HOW-TO:
+
+cd Encrypted\ Dash
+
+pip3 install -r requirements.txt
+
+python3 genkeys.py
+
+python3 camera.py
+
+python3 decryptVideo.py
+
 # Links to parts
 https://www.adafruit.com/product/4563?gclid=Cj0KCQiAvP6ABhCjARIsAH37rbTfnHDtiX_gaV7ff4WzTfu-c3mhPT_NCqultSHMqxdal-93ykp4f-saAv9UEALw_wcB
 https://learn.adafruit.com/raspberry-pi-hq-camera-case/3d-printing
