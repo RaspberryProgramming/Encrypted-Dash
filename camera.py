@@ -55,7 +55,6 @@ def writeFrame(frame, filepath):
 
 destination = "output" # Folder which the frames will be stored
 
-dimensions = (1920, 1080) # Sets the max resolution for recording video
 minFree = 2.0 # Minimum Free space left on harddisk in GB
 
 # Settings for any text added to frames
@@ -89,6 +88,9 @@ count = 0 # Keeps a count of how many frames have been recorded
 # Running the Code                                  #
 #####################################################
 cap = cv2.VideoCapture(0) # Start camera capture session
+
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920) # Set max cap width
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080) # Set max cap height
 
 while(True):
     # Capture new frame
