@@ -55,8 +55,7 @@ def decrypt(data, private_key):
 
 directory = "output"
 
-fps = 10.0 # Fps that the output video will be set to
-#dimensions = (640, 480) # 720p resolution for the output video (1280,720)
+#fps = 10.0 # Fps that the output video will be set to
 
 # Retrieve the private key
 private_key = RSA.import_key(open("private.pem").read())
@@ -113,7 +112,9 @@ for i in selected: # For each file
     file_in = open(directory + "/" + x[0], "rb") # Read the file as byte data
 
     dimensions = getDimension(decrypt(file_in, private_key)) # Get dimension of given recording
-    print(dimensions)
+
+    length = sr.convertToTime(x[-1]) - sr.convertToTime(x[0]) # Length of time for recording
+    fps = len(x) / length # calculate fps
 
     # Create video writer session
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
