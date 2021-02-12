@@ -73,7 +73,7 @@ def frameSort(arr):
             # traverse the array from 0 to n-i-1 
             # Swap if the element found is greater 
             # than the next element 
-            if sr.convertToTime(arr[j][0]) > sr.convertToTime(arr[j+1][0]): 
+            if sr.ev2Time(arr[j][0]) > sr.ev2Time(arr[j+1][0]): 
                 arr[j], arr[j+1] = arr[j+1], arr[j] 
 
 def worker(queue, filename):
@@ -94,15 +94,31 @@ def worker(queue, filename):
         print("\n[!] Unknown Error when decrypting and converting frame\n")
         queue.put((filename, None))
 
+def writer(queue, filename, fps, dimensions):
+    result = queue.get()
+    # Create video writer session
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    out = cv2.VideoWriter(filename, fourcc, fps, dimensions) # output.avi is the output file
 
+    while (result is not None):
+        if (result[1] is not None):
+            out.write(result)
+        print(len(result))
+        result = queue.get()
+
+    out.release()
+    print("Writer Finished")
+    
 
 directory = "output" # Directory where encrypted frames are stored
 
-procs = 1 # Default number of processes the program can run at a time
+procs = 8 # Default number of processes the program can run at a time
 
 # Retrieve the private key
-private_key = RSA.import_key(open("private.pem").read())
+file_in = open("private.pem")
+private_key = RSA.import_key(file_in.read())
 cipher_rsa = PKCS1_OAEP.new(private_key)
+file_in.close()
 
 # Get a list of files in the directory
 files = os.listdir(directory)
@@ -143,7 +159,8 @@ while (len(selected) < 1):
 
 numOfFiles = 0
 
-queue = Queue() # Queue for processes
+workerQueue = Queue() # Queue for decrypted frames
+writerQueue = Queue() # Queue for writing frames
 
 for x in selected:
     numOfFiles += len(recordings[x])
@@ -160,43 +177,82 @@ for i in selected: # For each file
 
     dimensions = getDimension(decrypt(path, private_key)) # Get dimension of given recording
 
-    length = sr.convertToTime(x[-1]) - sr.convertToTime(x[0]) # Length of time for recording
+    length = sr.ev2Time(x[-1]) - sr.ev2Time(x[0]) # Length of time for recording
     fps = len(x) / length # calculate fps
 
     # Create video writer session
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
     out = cv2.VideoWriter(rname, fourcc, fps, dimensions) # output.avi is the output file
 
-    for y in range(0, len(x), procs):
+    frames = []
+    processes = []
+    waitFrame = 0 # Frame the program is waiting to write
+
+    for i in range(procs):
+        # Create # of procs processes
+        worker_proc = Process(target=worker, args=(workerQueue, x[i]))
+        worker_proc.start()
+    
+    #for y in range(0, len(x), procs):
+    frameCount = procs # Current Frame #
+
+    recLength = len(x) # Length of the current recording
+    
+    writer = Process(target=writer, args=(writerQueue, rname, fps, dimensions))
+    writer.start()
+    while (frameCount < recLength):
         try:
-            start = time.time() # Used to calculate fps
-            frames = []
-            processes = []
+    #       start = time.time() # Used to calculate fps
+            
+            frame = workerQueue.get()
+            if frame[0] == x[waitFrame]:
+                if frame[1] is not None:
+                    writerQueue.put(frame[1])
 
-            for f in range(y, y+procs):
-                if f < len(x):
-                    worker_proc = Process(target=worker, args=(queue, x[f]))
-                    processes.append(worker_proc)
-                    worker_proc.start()
+                waitFrame += 1
+                
+                if len(frames) > 0:
 
-            for p in processes:
-                frames.append(queue.get()) # Read from the queue and do nothing
+                    while (len(frames) > 0 and frames[0][0] == x[waitFrame]):
+                        if frames[0][1] is not None:
+                            writerQueue.put(frames[0][1])
+                        waitFrame += 1
+                        frames.remove(frames[0])
 
-            frameSort(frames) # Sort the frames that came from the queue
+            elif (len(frames) > 0):
+                i = 0
+                
+                while (i < len(frames) and sr.ev2Time(frame[0]) < sr.ev2Time(frames[i][0])):
+                    i += 1
+                
+                frames.insert(i, frame)
 
-            for f in frames:
-                if f[1] is not None:
-                    out.write(f[1]) # Write the frame to the output file
+            else:
+                frames.append(frame)
+
+            worker_proc = Process(target=worker, args=(workerQueue, x[frameCount]))
+            for i in range(len(processes)):
+                if not processes[i].is_alive():
+                    processes[i].join()
+                    processes[i] = worker_proc
+            worker_proc.start()
+
+
+            #frameSort(frames) # Sort the frames that came from the queue
+
+            #for f in frames:
+            #    if f[1] is not None:
+            #        out.write(f[1]) # Write the frame to the output file
 
             
-            frameCount += procs
+            frameCount += 1
 
-            stop = time.time() # Used to calculate fps
+            #stop = time.time() # Used to calculate fps
 
-            fps = len(frames)/(stop-start)
+            #fps = len(frames)/(stop-start)
 
             # Display current progress
-            print("Decrypted %d%% or %i/%i of frames at %d fps." % ((frameCount/numOfFiles)*100, frameCount, numOfFiles, fps), end="\r")
+#            print("Decrypted %d%% or %i/%i of frames at * fps." % ((frameCount/numOfFiles)*100, frameCount, numOfFiles), end="\r")
 
         except KeyboardInterrupt: # Detects when user ends the program
             print("[*] Video Decryption ended early")
@@ -205,9 +261,44 @@ for i in selected: # For each file
             import sys
             sys.exit(0)
 
+    for p in processes:
+        p.join()
 
-    out.release() # Release the video writer
+    print("All Processes Ended")
+
+    print("Finishing")
+    print(workerQueue.full())
+    while (workerQueue.full()):
+        frame = workerQueue.get()
+        if frame[0] == x[waitFrame]:
+            if frame[1] is not None:
+                writerQueue.put(frame[1])
+            waitFrame += 1
+
+            if len(frames) > 0:
+
+                while (len(frames) > 0 and frames[0][0] == x[waitFrame]):
+                    if frames[0][1] is not None:
+                        out.write(frames[0][1])
+                    waitFrame += 1
+                    frames.remove(frames[0])
+
+        elif (len(frames) > 0):
+            i = 0
+
+            while (sr.ev2Time(frame[0]) < sr.ev2Time(frames[i][0]) and i < frames):
+                i += 1
+
+            frames.insert(i, frame)
+
+        else:
+            frames.append(frame)
+    
+    writerQueue.put(None)
+    writer.join()
+    #out.release() # Release the video writer
 
 totstop = time.time()
 
 print(totstop-totstart)
+print("Finished")
