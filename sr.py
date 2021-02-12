@@ -2,7 +2,7 @@
 TODO: FILL ME WITH DOCSTRING
 """
 
-def convertToTime(filename):
+def ev2Time(filename):
     """
     filename: filename in ev format
     Removes ev format and outputs time as a float
@@ -19,7 +19,7 @@ def splitRecordings(files, dist=10.0):
     previous = 0.0
     
     for f in files:
-        t = convertToTime(f) # Convert the filename to Time float
+        t =ev2Time(f) # Convert the filename to Time float
 
         if (abs(t-previous) > dist): # Check if this is a part of a new recording
             recording += 1 # Create new recording
