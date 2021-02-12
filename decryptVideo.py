@@ -7,6 +7,7 @@ import io
 import os
 import sys
 import sr
+import time
 
 def getDimension(data):
    """
@@ -113,7 +114,7 @@ for i in selected: # For each file
 
     dimensions = getDimension(decrypt(file_in, private_key)) # Get dimension of given recording
 
-    length = sr.convertToTime(x[-1]) - sr.convertToTime(x[0]) # Length of time for recording
+    length = sr.ev2Time(x[-1]) - sr.ev2Time(x[0]) # Length of time for recording
     fps = len(x) / length # calculate fps
 
     # Create video writer session
