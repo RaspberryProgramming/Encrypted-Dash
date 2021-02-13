@@ -8,6 +8,7 @@ import os
 import sys
 import sr
 import time
+from tqdm import tqdm
 
 def getDimension(data):
    """
@@ -99,11 +100,6 @@ while (len(selected) < 1):
             print("Input not formatted correctly")
             selected = []
 
-numOfFiles = 0
-
-for x in selected:
-    numOfFiles += len(recordings[x])
-
 for i in selected: # For each file
     # Create video writer session
     x = recordings[i]
@@ -121,7 +117,7 @@ for i in selected: # For each file
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
     out = cv2.VideoWriter(rname, fourcc, fps, dimensions) # output.avi is the output file
 
-    for f in x:
+    for f in tqdm(x, unit="frame"):
         frameCount += 1
         if f.split(".")[-1] == "ev": # check if the file has the correct extension
 
@@ -129,7 +125,7 @@ for i in selected: # For each file
 
             try:
                 data = decrypt(file_in, private_key) # Decrypt the file data
-                
+
                 #print(getDimension(data)) # TODO: ADD INITIAL DIMENSION DETECTION
 
                 # Convert jpeg data to numpy array
@@ -138,9 +134,6 @@ for i in selected: # For each file
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # convert frame to RGB
 
                 out.write(frame) # Write the frame to the output file
-
-                # Display current progress
-                print("Decrypted %d%% or %i/%i of frames" % ((frameCount/numOfFiles)*100, frameCount, numOfFiles), end="\r")
 
             except KeyboardInterrupt: # Detects when user ends the program
                 print("[*] Video Decryption ended early")
