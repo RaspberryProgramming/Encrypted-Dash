@@ -130,3 +130,9 @@ dmypy.json
 
 # Remove private and public keys
 *.pem
+
+# Ignore the output folder
+output/
+
+# Ignore Recordings
+*.avi
