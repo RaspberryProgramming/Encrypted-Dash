@@ -21,12 +21,12 @@ def writeFrame(frame, filepath):
     frame: numpy image frame data
     filepath: path, including file to save the data
     """
-    
-    img = Image.fromarray(frame, "RGB") # Convert image in numpy format to image data 
+
+    img = Image.fromarray(frame, "RGB") # Convert image in numpy format to image data
     data = io.BytesIO()
     img.save(data, format='JPEG') # Convert image data to jpeg
     data = data.getvalue() # get image byte data
-    
+
     # Load the private key
     try:
         recipient_key = RSA.import_key(open("public.pem").read())
@@ -105,8 +105,8 @@ while(True):
         timestamp = datetime.fromtimestamp(now).strftime("%m/%d/%Y %H:%M:%S.%f")
 
         # Stamp the timestamp onto the current frame
-        cv2.putText(frame, timestamp,bottomLeftCornerOfText, 
-            font, 
+        cv2.putText(frame, timestamp,bottomLeftCornerOfText,
+            font,
             fontScale,
             fontColor,
             lineType)

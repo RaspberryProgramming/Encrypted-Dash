@@ -2,13 +2,39 @@ import numpy as np
 import cv2
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES, PKCS1_OAEP
-from PIL import Image
-import io
 import os
 import sys
-import sr
 import time
 from tqdm import tqdm
+
+def ev2Time(filename):
+    """
+    filename: filename in ev format
+    Removes ev format and outputs time as a float
+    """
+    return float(filename[:-4])
+
+def splitRecordings(files, dist=10.0):
+    """
+    files: list of files using .ev format
+    dist: Distance in seconds where each recording must be to split, defaulted to 10.0s
+    """
+    recordings = []
+    recording = -1
+    previous = 0.0
+    
+    for f in files:
+        t =ev2Time(f) # Convert the filename to Time float
+
+        if (abs(t-previous) > dist): # Check if this is a part of a new recording
+            recording += 1 # Create new recording
+            recordings.append([])
+
+        recordings[recording].append(f) # Append the file to it's recording
+        previous = t # Set previous to the time file we just appended
+
+    return recordings
+
 
 def getDimension(data):
    """
@@ -67,7 +93,7 @@ cipher_rsa = PKCS1_OAEP.new(private_key)
 files = os.listdir(directory)
 files.sort()
 
-recordings = sr.splitRecordings(files)
+recordings = splitRecordings(files)
 
 frameCount = 0 # Used for approximating progress
 
@@ -110,7 +136,7 @@ for i in selected: # For each file
 
     dimensions = getDimension(decrypt(file_in, private_key)) # Get dimension of given recording
 
-    length = sr.ev2Time(x[-1]) - sr.ev2Time(x[0]) # Length of time for recording
+    length = ev2Time(x[-1]) - ev2Time(x[0]) # Length of time for recording
     fps = len(x) / length # calculate fps
 
     # Create video writer session
