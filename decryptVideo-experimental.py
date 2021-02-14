@@ -124,38 +124,41 @@ file_in.close()
 files = os.listdir(directory)
 files.sort()
 
-recordings = sr.splitRecordings(files)
+recordings = splitRecordings(files)
 
-frameCount = 0 # Used for approximating progress
-
-selected = []
+selected = [] # Stores list of selected recordings
 
 while (len(selected) < 1):
 
     print("Recordings:\n")
-    for x in range(len(recordings)): # For each file
-        rname = recordings[x][0][:-4]
-        print("[%i] %s" %(x,rname))
+    for i in range(len(recordings)):
+        rname = ev2Time(recordings[i][0])) # Convert filename to time format
+        rname = datatime.fromtimestamp(rname) # Convert time to timestamp
+        print("[%i] %s" %(i,rname))
 
+    # Print menu
     print("Please select one or more recordings. Type A for all")
     print("or type the number of the recording you'd like to decrypt")
     print("If you'd like to decrypt multiple, type in each with a comma")
     print("between like so")
     print("'1,5,9'")
     print("Recordings:", end="")
-
+    
     returnedText = input()
 
-    if returnedText in ["A", "a", "All", "ALL"]:
-        selected  = [i for i in range(len(recordings))]
+    if returnedText in ["A", "a", "All", "ALL"]: # Decrypt all recordings
+        selected  = range(recordings)
+
     else:
         try:
-            for s in returnedText.split(','):
+            for s in returnedText.split(','): # Split input by ,
 
-                selected.append(int(s))
+                selected.append(int(s)) # append each selected recording to selected list
         except:
             print("Input not formatted correctly")
-            selected = []
+            selected = [] # Reset selection sequence
+
+
 
 for i in selected: # For each file
     # Create video writer session
