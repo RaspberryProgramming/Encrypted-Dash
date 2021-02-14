@@ -72,7 +72,7 @@ def decrypt(path, private_key):
     # Retrieve session key, tag, ciphertext and nonce from file
     enc_session_key, nonce, tag, ciphertext = \
     [ file_in.read(x) for x in (private_key.size_in_bytes(), 16, 16, -1) ]
-    
+
     file_in.close() # Close session
 
     # Decrypt the session key
@@ -81,37 +81,25 @@ def decrypt(path, private_key):
     # Decrypt the data with the AES session key
     cipher_aes = AES.new(session_key, AES.MODE_EAX, nonce)
     data = cipher_aes.decrypt_and_verify(ciphertext, tag)
-    
+
     return data
 
-def frameSort(arr):
-    """
-    Bubble sort to sort an array of frames that come from the queue
-    """
-    n = len(arr) 
-  
-    # Traverse through all array elements 
-    for i in range(n-1): 
-    # range(n) also work but outer loop will repeat one time more than needed. 
-  
-        # Last i elements are already in place 
-        for j in range(0, n-i-1): 
-  
-            # traverse the array from 0 to n-i-1 
-            # Swap if the element found is greater 
-            # than the next element 
-            if sr.ev2Time(arr[j][0]) > sr.ev2Time(arr[j+1][0]): 
-                arr[j], arr[j+1] = arr[j+1], arr[j] 
-
 def worker(filename):
+    """
+    Worker function to decrypt and convert .ev to a writable format
+    filename: name of the file to read in and convert
+    return: None if there is an error, decrypted frame if successful
+    """
+
     try:
         global directory
         global private_key
-        
+
         data = decrypt(directory + "/" + filename, private_key) # Decrypt the file data
 
-        # Convert jpeg data to numpy array
-        nparr = np.frombuffer(data, np.int8)
+        nparr = np.frombuffer(data, np.int8) # Convert jpeg data to numpy array
+
+
         frame = cv2.imdecode(nparr, flags=1) # decode numpy array
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # convert frame to RGB
 
@@ -122,35 +110,7 @@ def worker(filename):
         print(e)
         return None
 
-def worker_init(private_key, pbar):
-    worker.private_key = private_key
-    worker.pbar = pbar
 
-def writer(queue, filename, frameCount, fps, dimensions):
-    
-    # Create video writer session
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    out = cv2.VideoWriter(filename, fourcc, fps, dimensions) # output.avi is the output file
-    
-    print(filename)
-    print(fourcc)
-    print(fps)
-    print(dimensions)
-
-    frames = []
-
-    for i in range(frameCount):
-
-        result = queue.get()
-        if (result is not None):
-            out.write(result)
-
-    #for f in frames:
-    #    out.write(f[1])
-
-    out.release()
-    print("Writer Finished")
-    
 
 directory = "output" # Directory where encrypted frames are stored
 
