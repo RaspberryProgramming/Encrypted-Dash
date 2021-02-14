@@ -173,7 +173,7 @@ for i in selected: # For each file
 
     dimensions = getDimension(decrypt(firstfile, private_key)) # Get dimension of given recording
 
-    length = sr.ev2Time(x[-1]) - sr.ev2Time(x[0]) # Length of time for recording
+    length = ev2Time(recording[-1]) - ev2Time(recording[0]) # Length of time for recording
 
     fps = len(x) / length # calculate fps
 
