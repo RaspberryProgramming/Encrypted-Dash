@@ -161,41 +161,45 @@ while (len(selected) < 1):
 
 
 for i in selected: # For each file
-    # Create video writer session
-    x = recordings[i]
+    
+    recording = recordings[i] # Copy the current recording to a single variable
+    
+    recordingTime = ev2Time(recording[0])
 
     # Determine the output's Filename
-    rname = x[0][:-4] + ".avi"
+    rname = str(datetime.fromtimestamp(recordingTime)) + ".avi"
 
     print(rname + " "*20) # Print the output filename
 
-    firstfile = directory + "/" + x[0] # Path to first file
+    firstfile = directory + "/" + recording[0] # Path to first file
 
     dimensions = getDimension(decrypt(firstfile, private_key)) # Get dimension of given recording
 
     length = ev2Time(recording[-1]) - ev2Time(recording[0]) # Length of time for recording
 
-    fps = len(x) / length # calculate fps
+    fps = len(recording) / length # calculate fps
 
     try:
+        # Create pool of workers to decrypt recording
         with Pool(cpu_count()) as pool:
-            results = list(tqdm(pool.imap(worker, x), total=len(x), unit="frame"))
-        #pool = Pool(cpu_count(), worker_init, [private_key, pbar])
-        #results = pool.map(worker, x)
+            # Recording is output to results and tqdm used as progress bar
+            results = list(tqdm(pool.imap(worker, recording), total=len(recording), unit="frame"))
 
-    except KeyboardInterrupt:
+    except KeyboardInterrupt: # If keyboard interrupt activated, the decryption will end
         pool.terminate()
         pool.close()
         break
-        
-    
+
     # Create video writer session
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
     out = cv2.VideoWriter(rname, fourcc, fps, dimensions) # output.avi is the output file
 
+    # Writing each frame to video file
     for r in results:
-        
+
         if (r is not None):
             out.write(r)
 
-    out.release()
+
+
+    out.release() # Release writing session
