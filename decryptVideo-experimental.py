@@ -132,7 +132,7 @@ while (len(selected) < 1):
 
     print("Recordings:\n")
     for i in range(len(recordings)):
-        rname = ev2Time(recordings[i][0])) # Convert filename to time format
+        rname = ev2Time(recordings[i][0]) # Convert filename to time format
         rname = datatime.fromtimestamp(rname) # Convert time to timestamp
         print("[%i] %s" %(i,rname))
 
