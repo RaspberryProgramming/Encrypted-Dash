@@ -87,6 +87,7 @@ count = 0 # Keeps a count of how many frames have been recorded
 #####################################################
 # Running the Code                                  #
 #####################################################
+
 cap = cv2.VideoCapture(0) # Start camera capture session
 
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920) # Set max cap width
