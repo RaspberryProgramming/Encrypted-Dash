@@ -9,6 +9,10 @@ from tqdm import tqdm
 from multiprocessing import Pool, TimeoutError, cpu_count
 import time
 
+###########################################
+# Functions                               #
+###########################################
+
 def ev2Time(filename):
     """
     filename: filename in ev format
@@ -92,6 +96,7 @@ def worker(filename):
     """
 
     try:
+        # Grab constant global variables
         global directory
         global private_key
 
@@ -111,11 +116,22 @@ def worker(filename):
         return None
 
 
+######################################################
+# Settings                                           #
+######################################################
 
 directory = "output" # Directory where encrypted frames are stored
 
+key_fn = "private.pem"
+
+######################################################
+# Preparations                                       #
+######################################################
+
+
+
 # Retrieve the private key
-file_in = open("private.pem")
+file_in = open(key_fn)
 private_key = RSA.import_key(file_in.read())
 cipher_rsa = PKCS1_OAEP.new(private_key)
 file_in.close()
@@ -124,11 +140,11 @@ file_in.close()
 files = os.listdir(directory)
 files.sort()
 
-recordings = splitRecordings(files)
+recordings = splitRecordings(files) # split list with files into individual lists for each recordings
 
 selected = [] # Stores list of selected recordings
 
-while (len(selected) < 1):
+while (len(selected) < 1): # Loop as long as there haven't been a selected recording
 
     print("Recordings:\n")
     for i in range(len(recordings)):
@@ -158,7 +174,9 @@ while (len(selected) < 1):
             print("Input not formatted correctly")
             selected = [] # Reset selection sequence
 
-
+#####################################################
+# Running the Code                                  #
+#####################################################
 
 for i in selected: # For each file
     
