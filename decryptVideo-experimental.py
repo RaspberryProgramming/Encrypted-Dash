@@ -8,6 +8,7 @@ from datetime import datetime
 from tqdm import tqdm
 from multiprocessing import Pool, TimeoutError, cpu_count
 import time
+import argparse
 
 ###########################################
 # Functions                               #
@@ -128,7 +129,18 @@ key_fn = "private.pem"
 # Preparations                                       #
 ######################################################
 
+# Parse Arguments
+parser = argparse.ArgumentParser(description='Retrieve command arguments')
 
+parser.add_argument("--all", help="Decrypt all recordings and skip selection menu",
+                    action="store_true")
+
+args = parser.parse_args()
+
+# Argument check
+
+if args.all:
+    selected = True
 
 # Retrieve the private key
 file_in = open(key_fn)
@@ -142,14 +154,20 @@ files.sort()
 
 recordings = splitRecordings(files) # split list with files into individual lists for each recordings
 
-selected = [] # Stores list of selected recordings
+# Selection menu
+
+if 'selected' not in globals():
+    selected = [] # Stores list of selected recordings
+
+else:
+    selected = range(len(recordings)) # Skip selection menu
 
 while (len(selected) < 1): # Loop as long as there haven't been a selected recording
 
     print("Recordings:\n")
     for i in range(len(recordings)):
         rname = ev2Time(recordings[i][0]) # Convert filename to time format
-        rname = datatime.fromtimestamp(rname) # Convert time to timestamp
+        rname = datetime.fromtimestamp(rname) # Convert time to timestamp
         print("[%i] %s" %(i,rname))
 
     # Print menu
