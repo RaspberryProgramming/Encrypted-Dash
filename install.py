@@ -18,7 +18,7 @@ def rpireq():
     Installs raspberry pi os requirements in addition to any other prerequisits.
     """
     
-    return subprocess.call("sudo apt install python3-picamera", shell=True)
+    return subprocess.call("sudo apt-get install -y libatlas-base-dev libhdf5-dev libhdf5-serial-dev libatlas-base-dev libjasper-dev  libqtgui4  libqt4-test", shell=True)
 
 def genkeys():
     """
