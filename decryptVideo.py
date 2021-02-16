@@ -5,6 +5,7 @@ from Crypto.Cipher import AES, PKCS1_OAEP
 import os
 import sys
 import time
+from datetime import datetime
 from tqdm import tqdm
 
 def ev2Time(filename):
@@ -103,8 +104,8 @@ while (len(selected) < 1):
 
     print("Recordings:\n")
     for i in range(len(recordings)):
-        rname = ev2Time(recordings[i][0])) # Convert filename to time format
-        rname = datatime.fromtimestamp(rname) # Convert time to timestamp
+        rname = ev2Time(recordings[i][0]) # Convert filename to time format
+        rname = datetime.fromtimestamp(rname) # Convert time to timestamp
         print("[%i] %s" %(i,rname))
 
     # Print menu
@@ -155,8 +156,6 @@ for i in selected: # For each file
             try:
                 data = decrypt(file_in, private_key) # Decrypt the file data
 
-                #print(getDimension(data)) # TODO: ADD INITIAL DIMENSION DETECTION
-
                 # Convert jpeg data to numpy array
                 nparr = np.frombuffer(data, np.int8)
                 frame = cv2.imdecode(nparr, flags=1) # decode numpy array
@@ -173,5 +172,5 @@ for i in selected: # For each file
 
             except ValueError as e: # Detects when a frame fails to decrypt
                 print("\n[!] Failed to decrypt frame %s\n" % (f))
-
+            
     out.release() # Release the video writer
