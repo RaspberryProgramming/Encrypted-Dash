@@ -19,6 +19,7 @@ https://learn.adafruit.com/raspberry-pi-hq-camera-case/3d-printing
 https://www.adafruit.com/product/4561
 https://www.adafruit.com/product/4295
 https://www.amazon.com/iSportgo-Suction-Different-KDLINKS-Cameras/dp/B06ZZW2Q77/ref=sr_1_1_sspa?dchild=1&keywords=dash+camera+mount&qid=1612746622&sr=8-1-spons&psc=1&spLa=ZW5jcnlwdGVkUXVhbGlmaWVyPUExUjZRN1AwN0swRUM0JmVuY3J5cHRlZElkPUEwNTAzMjc3M1RCSFpLTEpWNlFQWSZlbmNyeXB0ZWRBZElkPUEwMTQ5NDk4MVM5M0E5SExQSVVETiZ3aWRnZXROYW1lPXNwX2F0ZiZhY3Rpb249Y2xpY2tSZWRpcmVjdCZkb05vdExvZ0NsaWNrPXRydWU=
+https://learn.adafruit.com/adafruit-pitft-3-dot-5-touch-screen-for-raspberry-pi/easy-install-2
 
 #TODO:
 
