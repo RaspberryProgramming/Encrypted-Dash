@@ -90,8 +90,8 @@ count = 0 # Keeps a count of how many frames have been recorded
 
 cap = cv2.VideoCapture(0) # Start camera capture session
 
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920) # Set max cap width
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080) # Set max cap height
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640) # Set max cap width
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480) # Set max cap height
 
 while(True):
     # Capture new frame
