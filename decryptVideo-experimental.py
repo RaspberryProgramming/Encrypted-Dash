@@ -111,9 +111,7 @@ def worker(filename):
 
         return frame
 
-    except ValueError as e: # Detects when a frame fails to decrypt
-        print("\n[!] Failed to decrypt frame %s\n" % (filename))
-        print(e)
+    except ValueError: # Detects when a frame fails to decrypt
         return None
 
 
@@ -125,6 +123,8 @@ directory = "output" # Directory where encrypted frames are stored
 
 key_fn = "private.pem"
 
+procs = cpu_count()
+
 ######################################################
 # Preparations                                       #
 ######################################################
@@ -135,12 +135,18 @@ parser = argparse.ArgumentParser(description='Retrieve command arguments')
 parser.add_argument("--all", help="Decrypt all recordings and skip selection menu",
                     action="store_true")
 
+parser.add_argument("--procs", help="Specifies the number of processes to use",
+                    type=int)
+
 args = parser.parse_args()
 
 # Argument check
 
 if args.all:
     selected = True
+
+if args.procs:
+    procs = args.procs
 
 # Retrieve the private key
 file_in = open(key_fn)
@@ -161,7 +167,7 @@ if 'selected' not in globals():
 
 else:
     selected = range(len(recordings)) # Skip selection menu
-
+    
 while (len(selected) < 1): # Loop as long as there haven't been a selected recording
 
     print("Recordings:\n")
@@ -217,29 +223,32 @@ for i in selected: # For each file
 
     try:
         # Create pool of workers to decrypt recording
-        pool = Pool(cpu_count())
+        pool = Pool(procs)
         # Recording is output to results
         results = pool.imap(worker, recording)
-            
+                
+
+        # Create video writer session
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        out = cv2.VideoWriter(rname, fourcc, fps, dimensions) # output.avi is the output file
+
+        tq = tqdm(total=len(recording), unit="frame") # Create Progress bar
+
+        # Writing each frame to video file
+        for r in results:
+
+            if (r is not None):
+                out.write(r)
+
+            tq.update() # Update Progress Bar
 
     except KeyboardInterrupt: # If keyboard interrupt activated, the decryption will end
         pool.terminate()
         pool.close()
+
+        print("[*] Video Decryption ended early")
+
         break
 
-    # Create video writer session
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    out = cv2.VideoWriter(rname, fourcc, fps, dimensions) # output.avi is the output file
-
-    tq = tqdm(total=len(recording), unit="frame") # Create Progress bar
-
-    # Writing each frame to video file
-    for r in results:
-
-        if (r is not None):
-            out.write(r)
-
-        tq.update() # Update Progress Bar
-
-
     out.release() # Release writing session
+
