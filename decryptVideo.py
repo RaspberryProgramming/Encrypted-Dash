@@ -119,7 +119,7 @@ while (len(selected) < 1):
     returnedText = input()
 
     if returnedText in ["A", "a", "All", "ALL"]: # Decrypt all recordings
-        selected  = range(recordings)
+        selected  = range(len(recordings))
 
     else:
         try:
