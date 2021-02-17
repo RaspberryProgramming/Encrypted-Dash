@@ -217,9 +217,10 @@ for i in selected: # For each file
 
     try:
         # Create pool of workers to decrypt recording
-        with Pool(cpu_count()) as pool:
-            # Recording is output to results and tqdm used as progress bar
-            results = list(tqdm(pool.imap(worker, recording), total=len(recording), unit="frame"))
+        pool = Pool(cpu_count())
+        # Recording is output to results
+        results = pool.imap(worker, recording)
+            
 
     except KeyboardInterrupt: # If keyboard interrupt activated, the decryption will end
         pool.terminate()
@@ -230,12 +231,15 @@ for i in selected: # For each file
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
     out = cv2.VideoWriter(rname, fourcc, fps, dimensions) # output.avi is the output file
 
+    tq = tqdm(total=len(recording), unit="frame") # Create Progress bar
+
     # Writing each frame to video file
     for r in results:
 
         if (r is not None):
             out.write(r)
 
+        tq.update() # Update Progress Bar
 
 
     out.release() # Release writing session
