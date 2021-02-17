@@ -7,6 +7,7 @@ import sys
 import time
 from datetime import datetime
 from tqdm import tqdm
+import argparse
 
 def ev2Time(filename):
     """
@@ -82,9 +83,30 @@ def decrypt(data, private_key):
 
     return data
 
-directory = "output"
+######################################################
+# Settings                                           #
+######################################################
 
-#fps = 10.0 # Fps that the output video will be set to
+directory = "output" # Directory where encrypted frames are stored
+
+key_fn = "private.pem"
+
+######################################################
+# Preparations                                       #
+######################################################
+
+# Parse Arguments
+parser = argparse.ArgumentParser(description='Retrieve command arguments')
+
+parser.add_argument("--all", help="Decrypt all recordings and skip selection menu",
+                    action="store_true")
+
+args = parser.parse_args()
+
+# Argument check
+
+if args.all:
+    selected = True
 
 # Retrieve the private key
 private_key = RSA.import_key(open("private.pem").read())
@@ -98,8 +120,12 @@ recordings = splitRecordings(files)
 
 frameCount = 0 # Used for approximating progress
 
-selected = [] # Stores list of selected recordings
+if 'selected' not in globals():
+    selected = [] # Stores list of selected recordings
 
+else:
+    selected = range(len(recordings)) # Skip selection menu
+    
 while (len(selected) < 1):
 
     print("Recordings:\n")
