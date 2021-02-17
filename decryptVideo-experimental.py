@@ -181,7 +181,7 @@ while (len(selected) < 1): # Loop as long as there haven't been a selected recor
     returnedText = input()
 
     if returnedText in ["A", "a", "All", "ALL"]: # Decrypt all recordings
-        selected  = range(recordings)
+        selected  = range(len(recordings))
 
     else:
         try:
