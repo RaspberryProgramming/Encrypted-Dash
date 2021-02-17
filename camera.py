@@ -113,7 +113,7 @@ while(True):
             lineType)
 
         # Check whether there is enough space on the disk
-        total, used, free = shutil.disk_usage("./") # Retrieve storage space stats
+        total, used, free = shutil.disk_usage(destination) # Retrieve storage space stats
 
 
         if ((free // (2**30)) < minFree): # Check if there is enough space on the harddrive
