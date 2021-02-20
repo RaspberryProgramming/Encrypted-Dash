@@ -98,10 +98,10 @@ def worker(filename):
 
     try:
         # Grab constant global variables
-        global directory
+        global rec_dir
         global private_key
 
-        data = decrypt(directory + "/" + filename, private_key) # Decrypt the file data
+        data = decrypt(rec_dir + "/" + filename, private_key) # Decrypt the file data
 
         nparr = np.frombuffer(data, np.int8) # Convert jpeg data to numpy array
 
@@ -114,12 +114,11 @@ def worker(filename):
     except ValueError: # Detects when a frame fails to decrypt
         return None
 
+if __name__ in '__main__'
 
 ######################################################
 # Settings                                           #
 ######################################################
-
-directory = "output" # Directory where encrypted frames are stored
 
 key_fn = "private.pem"
 
@@ -138,6 +137,9 @@ parser.add_argument("--all", help="Decrypt all recordings and skip selection men
 parser.add_argument("--procs", help="Specifies the number of processes to use",
                     type=int)
 
+parser.add_argument("--recdir", help="Specifies where the program will search for .ev frames",
+                    type=str)
+
 args = parser.parse_args()
 
 # Argument check
@@ -147,6 +149,13 @@ if args.all:
 
 if args.procs:
     procs = args.procs
+else:
+    procs = True
+
+if args.recdir:
+    rec_dir = args.recdir
+else:
+    rec_dir = "output"
 
 # Retrieve the private key
 file_in = open(key_fn)
@@ -155,7 +164,7 @@ cipher_rsa = PKCS1_OAEP.new(private_key)
 file_in.close()
 
 # Get a list of files in the directory
-files = os.listdir(directory)
+files = os.listdir(rec_dir)
 files.sort()
 
 recordings = splitRecordings(files) # split list with files into individual lists for each recordings
@@ -213,7 +222,7 @@ for i in selected: # For each file
 
     print(rname + " "*20) # Print the output filename
 
-    firstfile = directory + "/" + recording[0] # Path to first file
+    firstfile = rec_dir + "/" + recording[0] # Path to first file
 
     dimensions = getDimension(decrypt(firstfile, private_key)) # Get dimension of given recording
 
