@@ -114,150 +114,150 @@ def worker(filename):
     except ValueError: # Detects when a frame fails to decrypt
         return None
 
-if __name__ in '__main__'
+if __name__ in '__main__':
 
-######################################################
-# Settings                                           #
-######################################################
+    ######################################################
+    # Settings                                           #
+    ######################################################
 
-key_fn = "private.pem"
+    key_fn = "private.pem"
 
-procs = cpu_count()
+    procs = cpu_count()
 
-######################################################
-# Preparations                                       #
-######################################################
+    ######################################################
+    # Preparations                                       #
+    ######################################################
 
-# Parse Arguments
-parser = argparse.ArgumentParser(description='Retrieve command arguments')
+    # Parse Arguments
+    parser = argparse.ArgumentParser(description='Retrieve command arguments')
 
-parser.add_argument("--all", help="Decrypt all recordings and skip selection menu",
-                    action="store_true")
+    parser.add_argument("--all", help="Decrypt all recordings and skip selection menu",
+                        action="store_true")
 
-parser.add_argument("--procs", help="Specifies the number of processes to use",
-                    type=int)
+    parser.add_argument("--procs", help="Specifies the number of processes to use",
+                        type=int)
 
-parser.add_argument("--recdir", help="Specifies where the program will search for .ev frames",
-                    type=str)
+    parser.add_argument("--recdir", help="Specifies where the program will search for .ev frames",
+                        type=str)
 
-args = parser.parse_args()
+    args = parser.parse_args()
 
-# Argument check
+    # Argument check
 
-if args.all:
-    selected = True
+    if args.all:
+        selected = True
 
-if args.procs:
-    procs = args.procs
-else:
-    procs = True
+    if args.procs:
+        procs = args.procs
+    else:
+        procs = True
 
-if args.recdir:
-    rec_dir = args.recdir
-else:
-    rec_dir = "output"
+    if args.recdir:
+        rec_dir = args.recdir
+    else:
+        rec_dir = "output"
 
-# Retrieve the private key
-file_in = open(key_fn)
-private_key = RSA.import_key(file_in.read())
-cipher_rsa = PKCS1_OAEP.new(private_key)
-file_in.close()
+    # Retrieve the private key
+    file_in = open(key_fn)
+    private_key = RSA.import_key(file_in.read())
+    cipher_rsa = PKCS1_OAEP.new(private_key)
+    file_in.close()
 
-# Get a list of files in the directory
-files = os.listdir(rec_dir)
-files.sort()
+    # Get a list of files in the directory
+    files = os.listdir(rec_dir)
+    files.sort()
 
-recordings = splitRecordings(files) # split list with files into individual lists for each recordings
+    recordings = splitRecordings(files) # split list with files into individual lists for each recordings
 
-# Selection menu
+    # Selection menu
 
-if 'selected' not in globals():
-    selected = [] # Stores list of selected recordings
-
-else:
-    selected = range(len(recordings)) # Skip selection menu
-    
-while (len(selected) < 1): # Loop as long as there haven't been a selected recording
-
-    print("Recordings:\n")
-    for i in range(len(recordings)):
-        rname = ev2Time(recordings[i][0]) # Convert filename to time format
-        rname = datetime.fromtimestamp(rname) # Convert time to timestamp
-        print("[%i] %s" %(i,rname))
-
-    # Print menu
-    print("Please select one or more recordings. Type A for all")
-    print("or type the number of the recording you'd like to decrypt")
-    print("If you'd like to decrypt multiple, type in each with a comma")
-    print("between like so")
-    print("'1,5,9'")
-    print("Recordings:", end="")
-    
-    returnedText = input()
-
-    if returnedText in ["A", "a", "All", "ALL"]: # Decrypt all recordings
-        selected  = range(len(recordings))
+    if 'selected' not in globals():
+        selected = [] # Stores list of selected recordings
 
     else:
+        selected = range(len(recordings)) # Skip selection menu
+        
+    while (len(selected) < 1): # Loop as long as there haven't been a selected recording
+
+        print("Recordings:\n")
+        for i in range(len(recordings)):
+            rname = ev2Time(recordings[i][0]) # Convert filename to time format
+            rname = datetime.fromtimestamp(rname) # Convert time to timestamp
+            print("[%i] %s" %(i,rname))
+
+        # Print menu
+        print("Please select one or more recordings. Type A for all")
+        print("or type the number of the recording you'd like to decrypt")
+        print("If you'd like to decrypt multiple, type in each with a comma")
+        print("between like so")
+        print("'1,5,9'")
+        print("Recordings:", end="")
+        
+        returnedText = input()
+
+        if returnedText in ["A", "a", "All", "ALL"]: # Decrypt all recordings
+            selected  = range(len(recordings))
+
+        else:
+            try:
+                for s in returnedText.split(','): # Split input by ,
+
+                    selected.append(int(s)) # append each selected recording to selected list
+            except:
+                print("Input not formatted correctly")
+                selected = [] # Reset selection sequence
+
+    #####################################################
+    # Running the Code                                  #
+    #####################################################
+
+    for i in selected: # For each file
+        
+        recording = recordings[i] # Copy the current recording to a single variable
+        
+        recordingTime = ev2Time(recording[0])
+
+        # Determine the output's Filename
+        rname = str(datetime.fromtimestamp(recordingTime)) + ".avi"
+
+        print(rname + " "*20) # Print the output filename
+
+        firstfile = rec_dir + "/" + recording[0] # Path to first file
+
+        dimensions = getDimension(decrypt(firstfile, private_key)) # Get dimension of given recording
+
+        length = ev2Time(recording[-1]) - ev2Time(recording[0]) # Length of time for recording
+
+        fps = len(recording) / length # calculate fps
+
         try:
-            for s in returnedText.split(','): # Split input by ,
+            # Create pool of workers to decrypt recording
+            pool = Pool(procs)
+            # Recording is output to results
+            results = pool.imap(worker, recording)
+                    
 
-                selected.append(int(s)) # append each selected recording to selected list
-        except:
-            print("Input not formatted correctly")
-            selected = [] # Reset selection sequence
+            # Create video writer session
+            fourcc = cv2.VideoWriter_fourcc(*'XVID')
+            out = cv2.VideoWriter(rname, fourcc, fps, dimensions) # output.avi is the output file
 
-#####################################################
-# Running the Code                                  #
-#####################################################
+            tq = tqdm(total=len(recording), unit="frame") # Create Progress bar
 
-for i in selected: # For each file
-    
-    recording = recordings[i] # Copy the current recording to a single variable
-    
-    recordingTime = ev2Time(recording[0])
+            # Writing each frame to video file
+            for r in results:
 
-    # Determine the output's Filename
-    rname = str(datetime.fromtimestamp(recordingTime)) + ".avi"
+                if (r is not None):
+                    out.write(r)
 
-    print(rname + " "*20) # Print the output filename
+                tq.update() # Update Progress Bar
 
-    firstfile = rec_dir + "/" + recording[0] # Path to first file
+        except KeyboardInterrupt: # If keyboard interrupt activated, the decryption will end
+            pool.terminate()
+            pool.close()
 
-    dimensions = getDimension(decrypt(firstfile, private_key)) # Get dimension of given recording
+            print("[*] Video Decryption ended early")
 
-    length = ev2Time(recording[-1]) - ev2Time(recording[0]) # Length of time for recording
+            break
 
-    fps = len(recording) / length # calculate fps
-
-    try:
-        # Create pool of workers to decrypt recording
-        pool = Pool(procs)
-        # Recording is output to results
-        results = pool.imap(worker, recording)
-                
-
-        # Create video writer session
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        out = cv2.VideoWriter(rname, fourcc, fps, dimensions) # output.avi is the output file
-
-        tq = tqdm(total=len(recording), unit="frame") # Create Progress bar
-
-        # Writing each frame to video file
-        for r in results:
-
-            if (r is not None):
-                out.write(r)
-
-            tq.update() # Update Progress Bar
-
-    except KeyboardInterrupt: # If keyboard interrupt activated, the decryption will end
-        pool.terminate()
-        pool.close()
-
-        print("[*] Video Decryption ended early")
-
-        break
-
-    out.release() # Release writing session
+        out.release() # Release writing session
 
