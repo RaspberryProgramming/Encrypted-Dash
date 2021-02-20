@@ -16,13 +16,16 @@ import argparse
 
 def ev2Time(filename):
     """
+    Convert .ev filename format to epoch time
+
     filename: filename in ev format
-    Removes ev format and outputs time as a float
     """
     return float(filename[:-4])
 
 def splitRecordings(files, dist=10.0):
     """
+    Splits list of .ev files and splits them based on dist into different recordings
+
     files: list of files using .ev format
     dist: Distance in seconds where each recording must be to split, defaulted to 10.0s
     """
@@ -45,7 +48,9 @@ def splitRecordings(files, dist=10.0):
 def getDimension(data):
    """
    Using given jpeg data getDimension will calculate the dimensions of the image.
+   
    data: JPG byte data
+
    return: [height, width]
    """
    # open image for reading in binary mode
@@ -70,6 +75,7 @@ def decrypt(path, private_key):
 
     data: encrypted jpg byte data
     private_key: private key used to decrypt jpg data
+
     return: jpg byte data
     """
     file_in = open(path, 'rb') # Open file session
@@ -91,8 +97,10 @@ def decrypt(path, private_key):
 
 def worker(filename):
     """
-    Worker function to decrypt and convert .ev to a writable format
+    Worker function to decrypt and convert .ev to a writable format for multiprocessing.Pool
+
     filename: name of the file to read in and convert
+
     return: None if there is an error, decrypted frame if successful
     """
 
@@ -114,15 +122,65 @@ def worker(filename):
     except ValueError: # Detects when a frame fails to decrypt
         return None
 
+def start_pool(recording, rec_dir, private_key, procs):
+    """
+    Starts decryption process for a recording using multiprocessing pool
+
+    recording: list of .ev filenames for recording
+    rec_dir: input directory with recording files
+    private_key: name of private key .pem file in working directory
+    procs: Number of processes to run
+
+    return: True for success, False for failure
+    """
+    recordingTime = ev2Time(recording[0])
+
+    # Determine the output's Filename
+    rname = str(datetime.fromtimestamp(recordingTime)) + ".avi"
+
+    print(rname + " "*20) # Print the output filename
+
+    firstfile = rec_dir + "/" + recording[0] # Path to first file
+
+    dimensions = getDimension(decrypt(firstfile, private_key)) # Get dimension of given recording
+
+    length = ev2Time(recording[-1]) - ev2Time(recording[0]) # Length of time for recording
+
+    fps = len(recording) / length # calculate fps
+
+    try:
+        # Create pool of workers to decrypt recording
+        pool = Pool(procs)
+        # Recording is output to results
+        results = pool.imap(worker, recording)
+                
+
+        # Create video writer session
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        out = cv2.VideoWriter(rname, fourcc, fps, dimensions) # output.avi is the output file
+
+        tq = tqdm(total=len(recording), unit="frame") # Create Progress bar
+
+        # Writing each frame to video file
+        for r in results:
+
+            if (r is not None):
+                out.write(r)
+
+            tq.update() # Update Progress Bar
+
+    except KeyboardInterrupt: # If keyboard interrupt activated, the decryption will end
+        pool.terminate()
+        pool.close()
+
+        print("[*] Video Decryption ended early")
+
+        return False
+
+    out.release() # Release writing session
+    return True
+
 if __name__ in '__main__':
-
-    ######################################################
-    # Settings                                           #
-    ######################################################
-
-    key_fn = "private.pem"
-
-    procs = cpu_count()
 
     ######################################################
     # Preparations                                       #
@@ -140,6 +198,9 @@ if __name__ in '__main__':
     parser.add_argument("--recdir", help="Specifies where the program will search for .ev frames",
                         type=str)
 
+    parser.add_argument("--privkey", help="Specifies path to private key .pem file in working directory",
+                        type=str)
+
     args = parser.parse_args()
 
     # Argument check
@@ -150,12 +211,18 @@ if __name__ in '__main__':
     if args.procs:
         procs = args.procs
     else:
-        procs = True
+        procs = cpu_count()
 
     if args.recdir:
         rec_dir = args.recdir
     else:
         rec_dir = "output"
+
+    if args.privkey:
+        key_fn = args.privkey
+
+    else:
+        key_fn = "private.pem"
 
     # Retrieve the private key
     file_in = open(key_fn)
@@ -215,49 +282,6 @@ if __name__ in '__main__':
         
         recording = recordings[i] # Copy the current recording to a single variable
         
-        recordingTime = ev2Time(recording[0])
-
-        # Determine the output's Filename
-        rname = str(datetime.fromtimestamp(recordingTime)) + ".avi"
-
-        print(rname + " "*20) # Print the output filename
-
-        firstfile = rec_dir + "/" + recording[0] # Path to first file
-
-        dimensions = getDimension(decrypt(firstfile, private_key)) # Get dimension of given recording
-
-        length = ev2Time(recording[-1]) - ev2Time(recording[0]) # Length of time for recording
-
-        fps = len(recording) / length # calculate fps
-
-        try:
-            # Create pool of workers to decrypt recording
-            pool = Pool(procs)
-            # Recording is output to results
-            results = pool.imap(worker, recording)
-                    
-
-            # Create video writer session
-            fourcc = cv2.VideoWriter_fourcc(*'XVID')
-            out = cv2.VideoWriter(rname, fourcc, fps, dimensions) # output.avi is the output file
-
-            tq = tqdm(total=len(recording), unit="frame") # Create Progress bar
-
-            # Writing each frame to video file
-            for r in results:
-
-                if (r is not None):
-                    out.write(r)
-
-                tq.update() # Update Progress Bar
-
-        except KeyboardInterrupt: # If keyboard interrupt activated, the decryption will end
-            pool.terminate()
-            pool.close()
-
-            print("[*] Video Decryption ended early")
-
+        if (not start_pool(recording, rec_dir, private_key, procs)): # Break loop if program failed
             break
-
-        out.release() # Release writing session
 
