@@ -22,6 +22,25 @@ def ev2Time(filename):
     """
     return float(filename[:-4])
 
+def extFilter(files, extension):
+    """
+    Filters out any files without the selected extension
+    files: list of filenames
+    """
+    remove = []
+    for i in range(len(files)):
+        try:
+            fext = files[i].split(".")[-1] # File extension extracted
+            if fext != extension:
+                remove.append(files[i])
+        except:
+            remove.append(files[i])
+
+    for r in remove:
+        files.remove(r)
+    
+    return files
+
 def splitRecordings(files, dist=10.0):
     """
     Splits list of .ev files and splits them based on dist into different recordings
@@ -232,7 +251,9 @@ if __name__ in '__main__':
 
     # Get a list of files in the directory
     files = os.listdir(rec_dir)
+    extFilter(files, "ev")
     files.sort()
+    
 
     recordings = splitRecordings(files) # split list with files into individual lists for each recordings
 
