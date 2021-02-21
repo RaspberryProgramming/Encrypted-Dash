@@ -10,6 +10,7 @@ from datetime import datetime
 import frames
 import shutil
 import os
+import argparse
 
 ###########################################
 # Functions                               #
@@ -53,10 +54,6 @@ def writeFrame(frame, filepath):
 # Settings                                           #
 ######################################################
 
-destination = "output" # Folder which the frames will be stored
-
-minFree = 2.0 # Minimum Free space left on harddisk in GB
-
 # Settings for any text added to frames
 font                   = cv2.FONT_HERSHEY_SIMPLEX
 bottomLeftCornerOfText = (20,20)
@@ -67,6 +64,35 @@ lineType               = 2
 ######################################################
 # Preparations                                       #
 ######################################################
+
+
+
+# Parse Arguments
+    parser = argparse.ArgumentParser(description='Retrieve command arguments')
+
+    parser.add_argument("--minfree", help="Sets minimum space that should be left free in Gigabytes",
+                        type=float)
+
+    parser.add_argument("--out", help="Path to output folder where recordings should be written to",
+                        type=float)
+
+    args = parser.parse_args()
+
+    # Argument check
+
+    # Minimum Free space left on harddisk in GB
+    if args.minfree:
+        minFree = args.minfree 
+    else:
+        minFree = 2.0
+
+    # Folder which the frames will be stored
+    if args.out:
+        destination = args.out
+    else:
+        destination = "./output"
+
+
 
 # Check if the output destination exists
 if not (os.path.exists(destination)):
