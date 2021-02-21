@@ -57,7 +57,7 @@ def writeFrame(frame, filepath):
 # Settings for any text added to frames
 font                   = cv2.FONT_HERSHEY_SIMPLEX
 bottomLeftCornerOfText = (20,20)
-fontScale              = 0.30
+fontScale              = 0.50
 fontColor              = (255,255,255)
 lineType               = 2
 
