@@ -96,32 +96,43 @@ class Frames:
         """
         Return the last Frame's filename
         """
-        return self.last.filename
+        if self.last != None:
+            return self.last.filename
+        else:
+            return None
 
     def getFirst(self):
         """
         Return the first Frame's filename
         """
-        return self.first.filename
+        if self.first != None:
+            return self.first.filename
+        else:
+            return None
 
     def popFirst(self):
         """
         Remove the first Frame and return it's value
         """
-
-        filename = self.first.filename
-        self.deleteFirst()
-
-        return filename
+        if self.first != None:
+            filename = self.first.filename
+            self.deleteFirst()
+            return filename
+        else:
+            return None
+       
 
     def popLast(self):
         """
         Remove the last Frame and return it's value
         """
-        filename = self.last.filename
-        self.deleteLast()
-
-        return filename
+        if self.last != None:
+            filename = self.last.filename
+            self.deleteLast()
+            return filename
+        else:
+            return None
+        
 
     def importFrames(self, dir):
         """
