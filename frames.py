@@ -19,6 +19,28 @@ class Frames:
         self.first = None # refers to the first/oldest Frame
         self.last = None # refers to the last/newest Frame
 
+    def __str__(self):
+        out = ""
+        
+        if self.first != None:
+            fr = self.first
+            
+            while fr.next != None:
+                out += fr.filename + " => "
+                fr = fr.next
+            
+            out += fr.filename
+        
+
+        return out
+
+    def print(self):
+        """
+        Prints the queue represented with arrows
+        """
+
+        print(self)
+
     def append(self, filename):
         """
         Appends new frame to the end of the frame queue
