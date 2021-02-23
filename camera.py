@@ -159,7 +159,7 @@ if __name__ in '__main__':
 
 
             if ((free // (2**30)) <= minFree): # Check if there is enough space on the harddrive
-                while ((free // 1073741824) < minFree): #Delete enough files to have correct storage
+                while ((free // 1073741824) <= minFree): #Delete enough files to have correct storage
 
                     fname = fr.popFirst() # Retrieve and remove the oldest frame
                     os.remove(destination + "/" + fname) # Delete the oldest frame
