@@ -74,7 +74,7 @@ if __name__ in '__main__':
                         type=float)
 
     parser.add_argument("--out", help="Path to output folder where recordings should be written to",
-                        type=float)
+                        type=str)
 
     parser.add_argument("--height", help="Height of output video",
                         type=int)
@@ -90,7 +90,7 @@ if __name__ in '__main__':
     if args.minfree:
         minFree = args.minfree 
     else:
-        minFree = 2.0
+        minFree = 5.0
 
     # Folder which the frames will be stored
     if args.out:
