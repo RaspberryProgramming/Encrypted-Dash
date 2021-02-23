@@ -114,10 +114,15 @@ if __name__ in '__main__':
     else:
         dimensions = [480, 640]
 
+    # Check if there is enough storage to support minFree configuration
+    total, used, free = shutil.disk_usage("/mnt") # Retrieve storage space stats
+    if free//(2**30) <= minFree:
+        print("[!] Not enough storage to support your configuration. Consider upgrading storage size or changing --minFree setting")
+        sys.exit(0)
+
     # Check if the output destination exists
     if not (os.path.exists(destination)):
         print("[!] Error: '%s' path does not exist" % (destination))
-        import sys
         sys.exit(0)
 
     fr = frames.Frames() # Generates frame object with all frames from selected output
@@ -159,13 +164,13 @@ if __name__ in '__main__':
 
 
             if ((free // (2**30)) <= minFree): # Check if there is enough space on the harddrive
-                while ((free // 1073741824) <= minFree): #Delete enough files to have correct storage
+                while ((free // (2**30)) <= minFree): #Delete enough files to have correct storage
 
                     fname = fr.popFirst() # Retrieve and remove the oldest frame
                     os.remove(destination + "/" + fname) # Delete the oldest frame
 
                     total, used, free = shutil.disk_usage("./") # Update storage Stats
-                print(str(free) + " "*20)
+                    print(str(free) + " "*20)
 
             filepath = destination + "/" + str(now) + ".ev" # Generate file path to write the current frame
 
