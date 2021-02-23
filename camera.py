@@ -169,7 +169,7 @@ if __name__ in '__main__':
                     fname = fr.popFirst() # Retrieve and remove the oldest frame
                     os.remove(destination + "/" + fname) # Delete the oldest frame
 
-                    total, used, free = shutil.disk_usage("./") # Update storage Stats
+                    total, used, free = shutil.disk_usage(destination) # Update storage Stats
                     print(str(free) + " "*20)
 
             filepath = destination + "/" + str(now) + ".ev" # Generate file path to write the current frame
