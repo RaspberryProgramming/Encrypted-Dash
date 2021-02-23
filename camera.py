@@ -116,7 +116,7 @@ if __name__ in '__main__':
 
     # Check if there is enough storage to support minFree configuration
     total, used, free = shutil.disk_usage("/mnt") # Retrieve storage space stats
-    if free//(2**30) <= minFree:
+    if total//(2**30) <= minFree:
         print("[!] Not enough storage to support your configuration. Consider upgrading storage size or changing --minFree setting")
         sys.exit(0)
 
