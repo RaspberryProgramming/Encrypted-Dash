@@ -169,6 +169,8 @@ if __name__ in '__main__':
 
             filepath = destination + "/" + str(now) + ".ev" # Generate file path to write the current frame
 
+            fr.append(str(now) + ".ev")# Add frame to Frames object
+
             # Write the frame to a file
             start = time.time()
             fsize = writeFrame(frame, filepath)
