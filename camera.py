@@ -51,140 +51,134 @@ def writeFrame(frame, filepath):
     file_out.close() # Close the write session and save to disk
     return len(data)
 
-######################################################
-# Settings                                           #
-######################################################
+if __name__ in '__main__':
+    ######################################################
+    # Settings                                           #
+    ######################################################
 
-# Settings for any text added to frames
-font                   = cv2.FONT_HERSHEY_SIMPLEX
-bottomLeftCornerOfText = (20,20)
-fontScale              = 0.50
-fontColor              = (255,255,255)
-lineType               = 2
+    # Settings for any text added to frames
+    font                   = cv2.FONT_HERSHEY_SIMPLEX
+    bottomLeftCornerOfText = (20,20)
+    fontScale              = 0.50
+    fontColor              = (255,255,255)
+    lineType               = 2
 
-######################################################
-# Preparations                                       #
-######################################################
+    ######################################################
+    # Preparations                                       #
+    ######################################################
 
+    # Parse Arguments
+    parser = argparse.ArgumentParser(description='Retrieve command arguments')
 
+    parser.add_argument("--minfree", help="Sets minimum space that should be left free in Gigabytes",
+                        type=float)
 
-# Parse Arguments
-parser = argparse.ArgumentParser(description='Retrieve command arguments')
+    parser.add_argument("--out", help="Path to output folder where recordings should be written to",
+                        type=float)
 
-parser.add_argument("--minfree", help="Sets minimum space that should be left free in Gigabytes",
-                    type=float)
+    parser.add_argument("--height", help="Height of output video",
+                        type=int)
 
-parser.add_argument("--out", help="Path to output folder where recordings should be written to",
-                    type=float)
+    parser.add_argument("--width", help="Width of output video",
+                        type=int)
 
-parser.add_argument("--height", help="Height of output video",
-                    type=int)
+    args = parser.parse_args()
 
-parser.add_argument("--width", help="Width of output video",
-                    type=int)
+    # Argument check
 
-args = parser.parse_args()
-
-# Argument check
-
-# Minimum Free space left on harddisk in GB
-if args.minfree:
-    minFree = args.minfree 
-else:
-    minFree = 2.0
-
-# Folder which the frames will be stored
-if args.out:
-    destination = args.out
-else:
-    destination = "./output"
-
-if args.height and args.width:
-    if (type(args.height) == int):
-        dimensions = [args.height, args.width]
+    # Minimum Free space left on harddisk in GB
+    if args.minfree:
+        minFree = args.minfree 
     else:
-        print("[!] input dimensions invalid")
+        minFree = 2.0
+
+    # Folder which the frames will be stored
+    if args.out:
+        destination = args.out
+    else:
+        destination = "./output"
+
+    if args.height and args.width:
+        if (type(args.height) == int):
+            dimensions = [args.height, args.width]
+        else:
+            print("[!] input dimensions invalid")
+            sys.exit(1)
+
+    elif (args.height):
+        print("[!] Argument --height requires --width argument")
         sys.exit(1)
-
-elif (args.height):
-    print("[!] Argument --height requires --width argument")
-    sys.exit(1)
-elif (args.width):
-    print("[!] Argument --width requires --height argument")
-    sys.exit(1)
-else:
-    dimensions = [480, 640]
-
-# Check if the output destination exists
-if not (os.path.exists(destination)):
-    print("[!] Error: '%s' path does not exist" % (destination))
-    import sys
-    sys.exit(0)
-
-files = os.listdir(destination) # Get list of files in destination path
-files.sort() # Sort the files in order from oldest to newest frame
-
-fr = frames.Frames() # Frames class object is used to store a queue of frames
-
-for f in files: # Put each file into the Frames object
-    fr.append(f)
-
-count = 0 # Keeps a count of how many frames have been recorded
-
-#####################################################
-# Running the Code                                  #
-#####################################################
-
-cap = cv2.VideoCapture(0) # Start camera capture session
-
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, dimensions[0]) # Set max cap height
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, dimensions[1]) # Set max cap width
-
-
-while(True):
-    # Capture new frame
-    ret, frame = cap.read()
-
-    if ret==True: # If frame retrieval was successful
-
-        # Timestamp the Frame
-        now = time.time() # Retrieve the current time
-
-        # Create a human readable timestamp
-        timestamp = datetime.fromtimestamp(now).strftime("%m/%d/%Y %H:%M:%S.%f")
-
-        # Stamp the timestamp onto the current frame
-        cv2.putText(frame, timestamp,bottomLeftCornerOfText,
-            font,
-            fontScale,
-            fontColor,
-            lineType)
-
-        # Check whether there is enough space on the disk
-        total, used, free = shutil.disk_usage(destination) # Retrieve storage space stats
-
-
-        if ((free // (2**30)) < minFree): # Check if there is enough space on the harddrive
-            while ((free // 1073741824) < minFree): #Delete enough files to have correct storage
-
-                fname = fr.popFirst() # Retrieve and remove the oldest frame
-                os.remove(destination + "/" + fname) # Delete the oldest frame
-
-                total, used, free = shutil.disk_usage("./") # Update storage Stats
-            print(free)
-
-        filepath = destination + "/" + str(now) + ".ev" # Generate file path to write the current frame
-
-        # Write the frame to a file
-        start = time.time()
-        fsize = writeFrame(frame, filepath)
-        stop = time.time()
-        count += 1
-        speed = (fsize/1000)/(stop-start)
-        print("%d written at %d KB/s" % (count, speed), end="\r")
+    elif (args.width):
+        print("[!] Argument --width requires --height argument")
+        sys.exit(1)
     else:
-        break
+        dimensions = [480, 640]
 
-# When everything done, release the capture
-cap.release()
-cv2.destroyAllWindows()
+    # Check if the output destination exists
+    if not (os.path.exists(destination)):
+        print("[!] Error: '%s' path does not exist" % (destination))
+        import sys
+        sys.exit(0)
+
+    fr = frames.Frames() # Generates frame object with all frames from selected output
+    fr.importFrames(destination) # Imports list of frames from folder
+
+    count = 0 # Keeps a count of how many frames have been recorded
+
+    #####################################################
+    # Running the Code                                  #
+    #####################################################
+
+    cap = cv2.VideoCapture(0) # Start camera capture session
+
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, dimensions[0]) # Set max cap height
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, dimensions[1]) # Set max cap width
+
+
+    while(True):
+        # Capture new frame
+        ret, frame = cap.read()
+
+        if ret==True: # If frame retrieval was successful
+
+            # Timestamp the Frame
+            now = time.time() # Retrieve the current time
+
+            # Create a human readable timestamp
+            timestamp = datetime.fromtimestamp(now).strftime("%m/%d/%Y %H:%M:%S.%f")
+
+            # Stamp the timestamp onto the current frame
+            cv2.putText(frame, timestamp,bottomLeftCornerOfText,
+                font,
+                fontScale,
+                fontColor,
+                lineType)
+
+            # Check whether there is enough space on the disk
+            total, used, free = shutil.disk_usage(destination) # Retrieve storage space stats
+
+
+            if ((free // (2**30)) < minFree): # Check if there is enough space on the harddrive
+                while ((free // 1073741824) < minFree): #Delete enough files to have correct storage
+
+                    fname = fr.popFirst() # Retrieve and remove the oldest frame
+                    os.remove(destination + "/" + fname) # Delete the oldest frame
+
+                    total, used, free = shutil.disk_usage("./") # Update storage Stats
+                print(free)
+
+            filepath = destination + "/" + str(now) + ".ev" # Generate file path to write the current frame
+
+            # Write the frame to a file
+            start = time.time()
+            fsize = writeFrame(frame, filepath)
+            stop = time.time()
+            count += 1
+            speed = (fsize/1000)/(stop-start)
+            print("%d written at %d KB/s" % (count, speed), end="\r")
+        else:
+            break
+
+    # When everything done, release the capture
+    cap.release()
+    cv2.destroyAllWindows()

@@ -1,3 +1,4 @@
+import os
 
 class Frames:
     """
@@ -99,3 +100,20 @@ class Frames:
         self.deleteLast()
 
         return filename
+
+    def importFrames(self, dir):
+        """
+        Generates frame object and imports frames from given directory
+
+        dir: directory or path to destined folder with frames
+        """
+
+        files = os.listdir(dir) # Get list of files in destination path
+        files.sort() # Sort the files in order from oldest to newest frame
+
+        extension = "ev" # extension of files
+
+        for f in files: # Put each file into the Frames object
+            fext = f.split(".")[-1] # File extension extracted
+            if fext == extension:
+                self.append(f)
