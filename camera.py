@@ -11,6 +11,7 @@ import frames
 import shutil
 import os
 import argparse
+import sys
 
 ###########################################
 # Functions                               #
@@ -76,6 +77,12 @@ parser.add_argument("--minfree", help="Sets minimum space that should be left fr
 parser.add_argument("--out", help="Path to output folder where recordings should be written to",
                     type=float)
 
+parser.add_argument("--height", help="Height of output video",
+                    type=int)
+
+parser.add_argument("--width", help="Width of output video",
+                    type=int)
+
 args = parser.parse_args()
 
 # Argument check
@@ -92,7 +99,21 @@ if args.out:
 else:
     destination = "./output"
 
+if args.height and args.width:
+    if (type(args.height) == int):
+        dimensions = [args.height, args.width]
+    else:
+        print("[!] input dimensions invalid")
+        sys.exit(1)
 
+elif (args.height):
+    print("[!] Argument --height requires --width argument")
+    sys.exit(1)
+elif (args.width):
+    print("[!] Argument --width requires --height argument")
+    sys.exit(1)
+else:
+    dimensions = [480, 640]
 
 # Check if the output destination exists
 if not (os.path.exists(destination)):
@@ -116,8 +137,9 @@ count = 0 # Keeps a count of how many frames have been recorded
 
 cap = cv2.VideoCapture(0) # Start camera capture session
 
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640) # Set max cap width
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480) # Set max cap height
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, dimensions[0]) # Set max cap height
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, dimensions[1]) # Set max cap width
+
 
 while(True):
     # Capture new frame
