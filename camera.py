@@ -165,7 +165,7 @@ if __name__ in '__main__':
                     os.remove(destination + "/" + fname) # Delete the oldest frame
 
                     total, used, free = shutil.disk_usage("./") # Update storage Stats
-                print(free)
+                print(str(free) + " "*20)
 
             filepath = destination + "/" + str(now) + ".ev" # Generate file path to write the current frame
 
@@ -175,7 +175,7 @@ if __name__ in '__main__':
             stop = time.time()
             count += 1
             speed = (fsize/1000)/(stop-start)
-            print("%d written at %d KB/s" % (count, speed), end="\r")
+            print("%d written at %d KB/s" % (count, speed), end="\r", flush=True)
         else:
             break
 
