@@ -136,3 +136,5 @@ output/
 
 # Ignore Recordings
 *.avi
+pgp-experiments/privatekey.asc
+pgp-experiments/publickey.asc
