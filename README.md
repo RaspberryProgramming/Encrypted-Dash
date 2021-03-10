@@ -1,8 +1,10 @@
 # Encrypted-Dash
 
-This programmed is designed to let you create a dash cam that encrypts the recorded video.
+## Description
 
-##HOW-TO:
+This programmed is designed to let you create a dash cam that encrypts the recorded video. This is not designed to be a cheap alternative to other dash cams, as you might be able to find ones with better quality for way less. This is a Proof of Concept and is meant for those who are looking for such a product with no success.
+
+## HOW-TO:
 
 Clone the repo
 
@@ -51,10 +53,11 @@ Tax: 11.13125
 
 Total: $148.13 (does not consider shipping)
 
-# TODO:
+## TODO:
 
 - Add function/setting to rotate image
 - Add how to install including RTC setup
 - Add functionality to add multiple cameras
 - Add Logging Functionality
 - Add video tutorial
+- Make installer more stable
