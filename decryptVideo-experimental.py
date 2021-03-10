@@ -1,7 +1,6 @@
 import numpy as np
 import cv2
-from Crypto.PublicKey import RSA
-from Crypto.Cipher import AES, PKCS1_OAEP
+from algorithms import AesInterface
 import os
 import sys
 from datetime import datetime
@@ -40,6 +39,16 @@ def extFilter(files, extension):
         files.remove(r)
     
     return files
+
+def decrypt(filename):
+    """
+    """
+    file_in = open(filename, 'rb')
+    plaintext = aes.decrypt(file_in.read())
+    file_in.close()
+
+    return plaintext
+
 
 def splitRecordings(files, dist=10.0):
     """
@@ -88,32 +97,6 @@ def getDimension(data):
 
    return (width, height)
 
-def decrypt(path, private_key):
-    """
-    Decrypts jpg data using a given private key
-
-    data: encrypted jpg byte data
-    private_key: private key used to decrypt jpg data
-
-    return: jpg byte data
-    """
-    file_in = open(path, 'rb') # Open file session
-
-    # Retrieve session key, tag, ciphertext and nonce from file
-    enc_session_key, nonce, tag, ciphertext = \
-    [ file_in.read(x) for x in (private_key.size_in_bytes(), 16, 16, -1) ]
-
-    file_in.close() # Close session
-
-    # Decrypt the session key
-    session_key = cipher_rsa.decrypt(enc_session_key)
-
-    # Decrypt the data with the AES session key
-    cipher_aes = AES.new(session_key, AES.MODE_EAX, nonce)
-    data = cipher_aes.decrypt_and_verify(ciphertext, tag)
-
-    return data
-
 def worker(filename):
     """
     Worker function to decrypt and convert .ev to a writable format for multiprocessing.Pool
@@ -128,7 +111,7 @@ def worker(filename):
         global rec_dir
         global private_key
 
-        data = decrypt(rec_dir + "/" + filename, private_key) # Decrypt the file data
+        data = decrypt(rec_dir + "/" + filename) # Decrypt the file data
 
         nparr = np.frombuffer(data, np.int8) # Convert jpeg data to numpy array
 
@@ -141,7 +124,7 @@ def worker(filename):
     except ValueError: # Detects when a frame fails to decrypt
         return None
 
-def start_pool(recording, rec_dir, private_key, procs):
+def start_pool(recording, rec_dir, procs):
     """
     Starts decryption process for a recording using multiprocessing pool
 
@@ -161,7 +144,7 @@ def start_pool(recording, rec_dir, private_key, procs):
 
     firstfile = rec_dir + "/" + recording[0] # Path to first file
 
-    dimensions = getDimension(decrypt(firstfile, private_key)) # Get dimension of given recording
+    dimensions = getDimension(decrypt(firstfile)) # Get dimension of given recording
 
     length = ev2Time(recording[-1]) - ev2Time(recording[0]) # Length of time for recording
 
@@ -243,11 +226,11 @@ if __name__ in '__main__':
     else:
         key_fn = "private.pem"
 
-    # Retrieve the private key
-    file_in = open(key_fn)
-    private_key = RSA.import_key(file_in.read())
-    cipher_rsa = PKCS1_OAEP.new(private_key)
-    file_in.close()
+    # Load private key
+    aes = AesInterface()
+
+    if (aes.load_keys(privatefile=key_fn) == -1):
+        sys.exit(1) # Exit if an error occurs
 
     # Get a list of files in the directory
     files = os.listdir(rec_dir)
@@ -303,6 +286,6 @@ if __name__ in '__main__':
         
         recording = recordings[i] # Copy the current recording to a single variable
         
-        if (not start_pool(recording, rec_dir, private_key, procs)): # Break loop if program failed
+        if (not start_pool(recording, rec_dir, procs)): # Break loop if program failed
             break
 

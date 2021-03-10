@@ -1,8 +1,6 @@
 import numpy as np
 import cv2
-from Crypto.PublicKey import RSA
-from Crypto.Random import get_random_bytes
-from Crypto.Cipher import AES, PKCS1_OAEP
+from algorithms import AesInterface
 from PIL import Image
 import io
 import time
@@ -29,25 +27,11 @@ def writeFrame(frame, filepath):
     img.save(data, format='JPEG') # Convert image data to jpeg
     data = data.getvalue() # get image byte data
 
-    # Load the private key
-    try:
-        recipient_key = RSA.import_key(open("public.pem").read())
-        session_key = get_random_bytes(16)
-    except FileNotFoundError:
-        print("[!] Please Generate keys with genkey.py")
-        import sys
-        sys.exit(0)
-
-    # Encrypt the session key with the public RSA key
-    cipher_rsa = PKCS1_OAEP.new(recipient_key)
-    enc_session_key = cipher_rsa.encrypt(session_key)
-    # Encrypt the data with the AES session key
-    cipher_aes = AES.new(session_key, AES.MODE_EAX)
-    ciphertext, tag = cipher_aes.encrypt_and_digest(data)
+    ciphertext = aes.encrypt(data)
 
     # Write the encrypted file
     file_out = open(filepath, "wb") # Open the file session, using wb to write byte data
-    [ file_out.write(x) for x in (enc_session_key, cipher_aes.nonce, tag, ciphertext) ]
+    file_out.write(ciphertext)
     file_out.close() # Close the write session and save to disk
     return len(data)
 
@@ -82,6 +66,9 @@ if __name__ in '__main__':
     parser.add_argument("--width", help="Width of output video",
                         type=int)
 
+    parser.add_argument("--publickey", help="Path to public key file",
+                        type=str)
+
     args = parser.parse_args()
 
     # Argument check
@@ -98,21 +85,33 @@ if __name__ in '__main__':
     else:
         destination = "./output"
 
+    # Resolution of output video
     if args.height and args.width:
-        if (type(args.height) == int):
-            dimensions = [args.height, args.width]
-        else:
-            print("[!] input dimensions invalid")
-            sys.exit(1)
+        # create dimensions variable using passed dimensions
+        dimensions = [args.height, args.width]
 
+    # Display error message if one of the dimensions isn't specified while the other is
     elif (args.height):
         print("[!] Argument --height requires --width argument")
         sys.exit(1)
     elif (args.width):
         print("[!] Argument --width requires --height argument")
         sys.exit(1)
-    else:
+
+    else: # Default dimensions
         dimensions = [480, 640]
+
+    if args.publickey: # Load public key given by arguments
+        public_key = args.publickey
+
+    else: # Default path to public key is public.pem
+        public_key = "public.pem"
+
+
+
+    aes = AesInterface() # Create interface to encrypt data
+    if (aes.load_keys(publicfile=public_key) == -1):
+            sys.exit(1) # exit if an error occurs
 
     # Check if there is enough storage to support minFree configuration
     total, used, free = shutil.disk_usage("/mnt") # Retrieve storage space stats
