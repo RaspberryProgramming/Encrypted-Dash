@@ -36,14 +36,20 @@ If you would like to use the installer, view the video tutorial using it is belo
 
 **_ VIDEO TODO _**
 
-# Parts List
+## Parts List
 
-- [Logitech c505e](https://www.logitech.com/en-us/products/webcams/c505e-business-webcam.960-001385.html)
-- [Raspberry Pi 4 1 GB](https://www.adafruit.com/product/4295)
-- [Adafruit PiRTC PCF8523](https://www.adafruit.com/product/3386)
-- [CR1220 Coin Battery](https://www.adafruit.com/product/380)
-- [Samsung Micro SD 16GB](https://www.adafruit.com/product/2693)
-- [Insignia Car Charger](https://www.bestbuy.com/site/insignia-vehicle-charger-black/6257430.p?skuId=6257430)
+- [Logitech c505e](https://www.logitech.com/en-us/products/webcams/c505e-business-webcam.960-001385.html): 55$
+- [Raspberry Pi 4 1 GB](https://www.adafruit.com/product/4295) $35
+- [Adafruit PiRTC PCF8523](https://www.adafruit.com/product/3386) $6
+- [CR1220 Coin Battery](https://www.adafruit.com/product/380) $1
+- [Samsung Micro SD 16GB](https://www.adafruit.com/product/2693) $20
+- [Insignia Car Charger](https://www.bestbuy.com/site/insignia-vehicle-charger-black/6257430.p?skuId=6257430): $20
+
+Subtotal: $137
+
+Tax: 11.13125
+
+Total: $148.13 (does not consider shipping)
 
 # TODO:
 
