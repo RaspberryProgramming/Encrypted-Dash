@@ -6,7 +6,7 @@ def generateNewKeys():
 
     return: private_key, public_key
     """
-    key = RSA.generate(2048) # Generate private key
+    key = RSA.generate(1024) # Generate private key
 
     # Extract the private key
     private_key = key.export_key()
@@ -19,7 +19,7 @@ def writeNewKeys():
     """
     Write new private and public keys as private.pem and public.pem
     """
-    key = RSA.generate(2048) # Generate private key
+    key = RSA.generate(1024) # Generate private key
 
     # Write the private key
     private_key = key.export_key()
