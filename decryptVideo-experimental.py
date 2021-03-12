@@ -139,7 +139,7 @@ def start_pool(recording, rec_dir, procs):
     recordingTime = ev2Time(recording[0])
 
     # Determine the output's Filename
-    rname = str(datetime.fromtimestamp(recordingTime)) + ".avi"
+    rname = str(datetime.fromtimestamp(recordingTime)) + ".mp4"
 
     print(rname + " "*20) # Print the output filename
 
@@ -159,7 +159,7 @@ def start_pool(recording, rec_dir, procs):
                 
 
         # Create video writer session
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         out = cv2.VideoWriter(rname, fourcc, fps, dimensions) # output.avi is the output file
 
         tq = tqdm(total=len(recording), unit="frame") # Create Progress bar
