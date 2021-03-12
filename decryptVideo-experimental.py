@@ -123,6 +123,9 @@ def worker(filename):
     except ValueError: # Detects when a frame fails to decrypt
         return None
 
+    except TypeError:
+        return None
+
 def start_pool(recording, rec_dir, procs):
     """
     Starts decryption process for a recording using multiprocessing pool
