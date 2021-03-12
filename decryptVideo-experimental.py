@@ -109,7 +109,6 @@ def worker(filename):
     try:
         # Grab constant global variables
         global rec_dir
-        global private_key
 
         data = decrypt(rec_dir + "/" + filename) # Decrypt the file data
 
@@ -130,7 +129,6 @@ def start_pool(recording, rec_dir, procs):
 
     recording: list of .ev filenames for recording
     rec_dir: input directory with recording files
-    private_key: name of private key .pem file in working directory
     procs: Number of processes to run
 
     return: True for success, False for failure
