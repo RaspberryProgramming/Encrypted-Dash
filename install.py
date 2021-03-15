@@ -2,7 +2,6 @@
 import os
 import subprocess
 import sys
-from crontab import CronTab
 
 print("""This script is meant to run on a debian based system.
 If you are running anything else, please CTRL+C. Otherwise, press enter
@@ -148,10 +147,6 @@ prereq = [ # List of prerequisit commands
     "pip3 install -r requirements.txt",
 ]
 
-comment = "EncryptedDash"
-
-cron = CronTab(user=True)
-
 for c in prereq:
     
     output = os.system(c)
@@ -160,6 +155,14 @@ for c in prereq:
         # Print error if command failed to run correctly
         print("[!] There was an issue when running '%s'" % (c))
         sys.exit(1)
+
+# Needed variables and initializations
+
+comment = "EncryptedDash"
+
+from crontab import CronTab # Imported later to ensure that it was installed before loading
+
+cron = CronTab(user=True)
 
 #####################################
 # Selection Menu                    #
@@ -186,7 +189,7 @@ while (selection.upper not in ["Q", "QUIT"]):
     
     selection = input("Selection: ")
 
-    if selection.upper in ["Q", "QUIT"]:
+    if selection.upper() in ["Q", "QUIT"]:
 
         print("Quitting")
         pass
