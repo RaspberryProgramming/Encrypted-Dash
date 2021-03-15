@@ -144,6 +144,7 @@ if subprocess.call("pip3", shell=False) != 0:
 
 
 prereq = [ # List of prerequisit commands
+    "pip3 install --upgrade pip",
     "pip3 install -r requirements.txt",
 ]
 
@@ -183,7 +184,7 @@ selections = [
 
 selection = ""
 
-while (selection.upper not in ["Q", "QUIT"]):
+while (selection.upper() not in ["Q", "QUIT"]):
     for i in range(len(selections)):
         print("[ %d ] %s : %s" % (i, selections[i][0], selections[i][1]))
     
