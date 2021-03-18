@@ -19,8 +19,23 @@ def genkeys():
     The keys will be stored in the local folder. Make sure to copy
     private.pem to a safe location and delete it from insecure storage.
     """
-    import genkey
-    genkey.writeNewKeys()
+    import genkey # Import genkey
+
+    sizes = ["1024", "2048", "4096", "8192"] # List of acceptable keysizes
+
+    print("\n\nThe following keysizes are valid:")
+
+    for i in sizes:
+        print("    %s"%i)
+
+    keysize = input("Keysize: ") # retrieve input for keysize
+
+    while(keysize not in sizes and keysize.upper() != "q"):
+
+        keysize = input("Keysize: ") # Retieve more keysize input as long as valid keysize is not given
+
+    if (keysize in sizes): # If we have a valid keysize
+        genkey.writeNewKeys(int(keysize)) # Generate new keys
 
 def input_default(prompt, default):
     """
