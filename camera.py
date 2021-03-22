@@ -41,7 +41,7 @@ if __name__ in '__main__':
     ######################################################
 
     # Settings for any text added to frames
-    font                   = cv2.FONT_HERSHEY_SIMPLEX
+    font                   = cv2.FONT_HERSHEY_SCRIPT_SIMPLEX
     bottomLeftCornerOfText = (20,20)
     fontScale              = 0.50
     fontColor              = (255,255,255)
@@ -149,7 +149,7 @@ if __name__ in '__main__':
             now = time.time() # Retrieve the current time
 
             # Create a human readable timestamp
-            timestamp = datetime.fromtimestamp(now).strftime("%m/%d/%Y %H:%M:%S.%f")
+            timestamp = datetime.fromtimestamp(now).strftime("%m/%d/%Y %H:%M:%S")
 
             # Stamp the timestamp onto the current frame
             cv2.putText(frame, timestamp,bottomLeftCornerOfText,
@@ -176,11 +176,10 @@ if __name__ in '__main__':
             fr.append(str(now) + ".ev")# Add frame to Frames object
 
             # Write the frame to a file
-            start = time.time()
             fsize = writeFrame(frame, filepath)
             stop = time.time()
             count += 1
-            speed = (fsize/1000)/(stop-start)
+            speed = (fsize/1000)/(stop-now)
             print("%d written at %d KB/s" % (count, speed), end="\r", flush=True)
         else:
             break
