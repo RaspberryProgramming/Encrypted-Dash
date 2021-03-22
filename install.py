@@ -159,6 +159,7 @@ if subprocess.call("pip3", shell=False) != 0:
 
 
 prereq = [ # List of prerequisit commands
+    "sudo apt install libatlas-base-dev", # Required on raspberry pi
     "pip3 install --upgrade pip",
     "pip3 install -r requirements.txt",
 ]
