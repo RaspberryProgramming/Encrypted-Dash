@@ -1,13 +1,8 @@
 #!/usr/bin/python3
 import os
+import pip
 import subprocess
 import sys
-
-print("""This script is meant to run on a debian based system.
-If you are running anything else, please CTRL+C. Otherwise, press enter
-to begin installation.""")
-
-input("Ready: ")
 
 #####################################
 # function Definitions              #
@@ -36,6 +31,7 @@ def genkeys():
 
     if (keysize in sizes): # If we have a valid keysize
         genkey.writeNewKeys(int(keysize)) # Generate new keys
+        print("Keys written to private.pem and public.pem")
 
 def input_default(prompt, default):
     """
@@ -66,7 +62,6 @@ def setupBoot():
         if (selection.upper in ["Y", "YES"]):
             for j in jobs:
                 j.delete()
-        
     
     # Retrieve necessary data to create job
 
@@ -95,6 +90,8 @@ def setupBoot():
 
     if (not os.path.isdir(out)):
         os.mkdir(out)
+
+    cron.write()
     
 
 def enableBoot():
@@ -134,52 +131,84 @@ def deleteBoot():
     jobs = [i for i in cron.find_comment(comment)] # Get list of jobs
     
     for j in jobs:
-        jobs[j].delete()
+        j.delete()
 
         print("[ * ] All Jobs have been deleted")
+    
+    print("[ * ] Job removal finished...")
+
+def install():
+    """
+    """
+
+    # Check if pip is installed
+
+    print("[-] Installing dependencies. Please type password if prompted.")
+
+    apt_packages = ["python3-pip",
+                    "libatlas-base-dev"] # Required on raspberry pi
+
+    # apt installations
+    if subprocess.call("apt", shell=False) != 0:
+        print("[-] Installing apt dependencies")
+        
+        command = "sudo apt install -y " + " ".join(apt_packages)
+
+        output = subprocess.call(command, shell=True)
+
+        if output != 0:
+            print("[!] There was an issue when running '%s'" % (command))
+            sys.exit(1)
+
+    else:
+        print("[ ! ] Looks like you aren't running a debian based distro.")
+        print("      The script will continue but may fail. You may want to install manually.")
+        input("Press enter to continue:")
+    
+
+    if subprocess.call("pip3", shell=False) != 0:
+        print("[-] Installing pip3")
+        command = "sudo apt install python3-pip -y"
+        
+        output = subprocess.call(command, shell=True)
+
+        if output != 0:
+            print("[!] There was an issue when running '%s'" % (command))
+            sys.exit(1)
+
+
+    # Install packages
+
+    failed = pip.main(["install", "--upgrade", "-r", "requirements.txt"])
+
+    if failed != 0:
+        # Print error if command failed to run correctly
+        print("[!] There was an issue when installing python dependencies")
+        sys.exit(1)
+    
 
 #####################################
 # Prerequisits                      #
 #####################################
 
-# Check if pip is installed
+try:
+    comment = "EncryptedDash"
 
-print("[-] Installing dependencies. Please type password if prompted.")
+    from crontab import CronTab # Imported later to ensure that it was installed before loading
 
-if subprocess.call("pip3", shell=False) != 0:
-    print("[-] Installing pip3")
-    command = "sudo apt install python3-pip -y"
-    
-    output = subprocess.call(command, shell=True)
+    cron = CronTab(user=True)
 
-    if output != 0:
-        print("[!] There was an issue when running '%s'" % (command))
-        sys.exit(1)
+except ImportError:
+    print("[!] Error, Module python-crontab is required.")
+    print("Would you like to install dependencies?")
+    answer = input("Choice [Y]:")
 
+    if answer.upper() in "YES":
+        install()
+    else:
+        print("Goodbye...")
+        sys.exit(0)
 
-
-prereq = [ # List of prerequisit commands
-    "sudo apt install libatlas-base-dev", # Required on raspberry pi
-    "pip3 install --upgrade pip",
-    "pip3 install -r requirements.txt",
-]
-
-for c in prereq:
-    
-    output = os.system(c)
-
-    if output != 0:
-        # Print error if command failed to run correctly
-        print("[!] There was an issue when running '%s'" % (c))
-        sys.exit(1)
-
-# Needed variables and initializations
-
-comment = "EncryptedDash"
-
-from crontab import CronTab # Imported later to ensure that it was installed before loading
-
-cron = CronTab(user=True)
 
 #####################################
 # Selection Menu                    #
@@ -191,6 +220,7 @@ Format: [name, description, function]
 """
 
 selections = [
+    ["Install Dependencies", "Installs dependencies and updates software. WARNING: Requires a reload of the script before other changes can be done.", install],
     ["Generate keys", "Generates private and public keys and writes them to .pem files.", genkeys],
     ["Setup Boot", "Sets up boot config", setupBoot],
     ["Enable Boot", "Enables service to run at boot", enableBoot],
@@ -203,6 +233,8 @@ selection = ""
 while (selection.upper() not in ["Q", "QUIT"]):
     for i in range(len(selections)):
         print("[ %d ] %s : %s" % (i, selections[i][0], selections[i][1]))
+
+    print("[ q ] Quit : Quits the install script")
     
     selection = input("Selection: ")
 
@@ -217,3 +249,5 @@ while (selection.upper() not in ["Q", "QUIT"]):
 
     else:
         print("[ ! ] Please pass a valid option or Q to quit")
+    
+    print("\n\n")
