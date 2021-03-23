@@ -63,6 +63,7 @@ Run Installer
 `python3 install.py`
 
 If you are asked to install dependencies type
+
 `Choice [Y]:y`
 
 If this does not show up, Run "Install Dependencies" From here, run other options as necessary.
@@ -72,6 +73,7 @@ Once finished with install.py, to run the camera type
 `python3 camera.py`
 
 Make sure that a camera is connected to the device. Next, you will need to decrypt. You can do so by typing
+
 `python3 decryptVideo.py`
 
 

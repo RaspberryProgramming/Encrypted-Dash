@@ -241,7 +241,7 @@ while (selection.upper() not in ["Q", "QUIT"]):
     if selection.upper() in ["Q", "QUIT"]:
 
         print("Quitting")
-        pass
+        sys.exit(0)
     
     elif int(selection) < len(selections) and int(selection) >= 0:
 
