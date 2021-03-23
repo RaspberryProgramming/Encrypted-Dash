@@ -6,6 +6,8 @@ This programmed is designed to let you create a dash cam that encrypts the recor
 
 ## HOW-TO:
 
+### Manual Install:
+
 Clone the repo
 
 `git clone https://github.com/RaspberryProgramming/Encrypted-Dash`
@@ -14,9 +16,17 @@ Enter the repo
 
 `cd Encrypted\ Dash`
 
+Install pip3 and python3 (Debian based Distros)
+
+`sudo apt install python3 python3-pip`
+
+Install libatlas if you run into "ImportError: libcblas.so.3: cannot open shared object file..." run
+
+`sudo apt install libatlas-base-dev`
+
 Install Requirements
 
-`pip3 install -r requirements.txt`
+`pip3 install --upgrade -r requirements.txt`
 
 Generate private and public keys
 
@@ -34,7 +44,38 @@ Decrypt video
 
 `python3 decryptVideo.py`
 
-If you would like to use the installer, view the video tutorial using it is below
+### Automated Install (Debian Based System)
+
+Clone the repo
+
+`git clone https://github.com/RaspberryProgramming/Encrypted-Dash`
+
+Enter the repo
+
+`cd Encrypted\ Dash`
+
+Install python3
+
+`sudo apt install python3`
+
+Run Installer
+
+`python3 install.py`
+
+If you are asked to install dependencies type
+`Choice [Y]:y`
+
+If this does not show up, Run "Install Dependencies" From here, run other options as necessary.
+
+Once finished with install.py, to run the camera type
+
+`python3 camera.py`
+
+Make sure that a camera is connected to the device. Next, you will need to decrypt. You can do so by typing
+`python3 decryptVideo.py`
+
+
+A more detailed tutorial click the link below.
 
 **_ VIDEO TODO _**
 
@@ -60,4 +101,4 @@ Total: $148.13 (does not consider shipping)
 - Add functionality to add multiple cameras
 - Add Logging Functionality
 - Add video tutorial
-- Make installer more stable
+- Add improved versioning for save format
