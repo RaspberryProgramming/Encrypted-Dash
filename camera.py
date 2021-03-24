@@ -1,6 +1,6 @@
 import numpy as np
 import cv2
-from algorithms import AesInterface
+import algorithms
 from PIL import Image
 import io
 import time
@@ -27,11 +27,11 @@ def writeFrame(frame, filepath):
     img.save(data, format='JPEG') # Convert image data to jpeg
     data = data.getvalue() # get image byte data
 
-    ciphertext = aes.encrypt(data)
+    ciphertext = algorithm.encrypt(data)
 
     # Write the encrypted file
     file_out = open(filepath, "wb") # Open the file session, using wb to write byte data
-    file_out.write(ciphertext)
+    file_out.write(algorithm_key.encode() + ciphertext)
     file_out.close() # Close the write session and save to disk
     return len(data)
 
@@ -68,6 +68,9 @@ if __name__ in '__main__':
 
     parser.add_argument("--publickey", help="Path to public key file",
                         type=str)
+
+    parser.add_argument("--algorithm", help="Select the algorithm you'd like to use. The following are valid options: %s" % 
+                        (", ".join(algorithms.algorithms)))
 
     args = parser.parse_args()
 
@@ -107,10 +110,18 @@ if __name__ in '__main__':
     else: # Default path to public key is public.pem
         public_key = "public.pem"
 
+    if args.algorithm:
+        algorithm_key = args.algorithm
+    else:
+        algorithm_key = "aes"
 
-
-    aes = AesInterface() # Create interface to encrypt data
-    if (aes.load_keys(publicfile=public_key) == -1):
+    try:
+        algorithm = algorithms.algorithms[algorithm_key]() # Create interface to encrypt data
+    except KeyError:
+        print("Issue finding given algorithm. Please ensure this is a valid algorithm...")
+        sys.exit(1)
+    
+    if (algorithm.load_keys(publicfile=public_key) == -1):
             sys.exit(1) # exit if an error occurs
 
     # Check if there is enough storage to support minFree configuration
@@ -173,7 +184,7 @@ if __name__ in '__main__':
 
             filepath = destination + "/" + str(now) + ".ev" # Generate file path to write the current frame
 
-            fr.append(str(now) + ".ev")# Add frame to Frames object
+            fr.append(str(now) + ".ev", destination)# Add frame to Frames object
 
             # Write the frame to a file
             fsize = writeFrame(frame, filepath)

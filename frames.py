@@ -11,9 +11,33 @@ class Frames:
             Object used to represent each frame in the queue.
         """
         def __init__(self):
+            self.path = "" # path to the file itself
             self.filename = "" # name of the file
             self.next = None # next Frame in the sequence
             self.previous = None # previous Frame in the sequence
+
+        def algorithm(self):
+            f = open(self.path, "rb")
+            algorithm = f.read(3)
+            f.close()
+
+            return algorithm
+
+        def getTimestamp(self):
+            """
+            Convert .ev filename format to epoch time
+
+            filename: filename in ev format
+            """
+
+            return float(self.filename[:-4])
+
+        def __str__(self):
+            """
+            __str__: returns string when object is refered to as so
+            """
+
+            return self.filename
 
     def __init__(self):
         self.first = None # refers to the first/oldest Frame
@@ -41,7 +65,7 @@ class Frames:
 
         print(self)
 
-    def append(self, filename):
+    def append(self, filename, directory):
         """
         Appends new frame to the end of the frame queue
 
@@ -50,6 +74,7 @@ class Frames:
         # Create a new frame object for the given filename
         frame = self.Frame() # Create a new Frame and add a filename to it
         frame.filename = filename
+        frame.path = directory + "/" + filename
 
 
         if self.first != None: # If Frames already exist
@@ -133,15 +158,20 @@ class Frames:
         else:
             return None
         
+    def empty(self):
+        if self.last == None:
+            return True
+        else:
+            return False
 
-    def importFrames(self, dir):
+    def importFrames(self, directory):
         """
         Generates frame object and imports frames from given directory
 
-        dir: directory or path to destined folder with frames
+        directory: directory or path to destined folder with frames
         """
 
-        files = os.listdir(dir) # Get list of files in destination path
+        files = os.listdir(directory) # Get list of files in destination path
         files.sort() # Sort the files in order from oldest to newest frame
 
         extension = "ev" # extension of files
@@ -149,4 +179,5 @@ class Frames:
         for f in files: # Put each file into the Frames object
             fext = f.split(".")[-1] # File extension extracted
             if fext == extension:
-                self.append(f)
+                self.append(f, directory)
+                

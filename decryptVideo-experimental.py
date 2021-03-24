@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
-from algorithms import AesInterface
+from frames import Frames
+import algorithms
 import os
 import sys
 from datetime import datetime
@@ -44,13 +45,13 @@ def decrypt(filename):
     """
     """
     file_in = open(filename, 'rb')
-    plaintext = aes.decrypt(file_in.read())
+    plaintext = algorithm.decrypt(file_in.read())
     file_in.close()
 
     return plaintext
 
 
-def splitRecordings(files, dist=10.0):
+def splitRecordings(frames, dist=10.0):
     """
     Splits list of .ev files and splits them based on dist into different recordings
 
@@ -61,15 +62,18 @@ def splitRecordings(files, dist=10.0):
     recording = -1
     previous = 0.0
     
-    for f in files:
-        t =ev2Time(f) # Convert the filename to Time float
+    while (not frames.empty()):
+        frame = frames.first
+        frames.deleteFirst()
 
-        if (abs(t-previous) > dist): # Check if this is a part of a new recording
+        time = frame.getTimestamp() # Convert the filename to Time float
+
+        if (abs(time-previous) > dist): # Check if this is a part of a new recording
             recording += 1 # Create new recording
             recordings.append([])
 
-        recordings[recording].append(f) # Append the file to it's recording
-        previous = t # Set previous to the time file we just appended
+        recordings[recording].append(frame) # Append the file to it's recording
+        previous = time # Set previous to the time file we just appended
 
     return recordings
 
@@ -97,20 +101,19 @@ def getDimension(data):
 
    return (width, height)
 
-def worker(filename):
+def worker(file_frame):
     """
     Worker function to decrypt and convert .ev to a writable format for multiprocessing.Pool
 
-    filename: name of the file to read in and convert
+    file_frame: name of the file to read in and convert
 
     return: None if there is an error, decrypted frame if successful
     """
 
     try:
         # Grab constant global variables
-        global rec_dir
 
-        data = decrypt(rec_dir + "/" + filename) # Decrypt the file data
+        data = decrypt(file_frame.path) # Decrypt the file data
 
         nparr = np.frombuffer(data, np.int8) # Convert jpeg data to numpy array
 
@@ -136,18 +139,33 @@ def start_pool(recording, rec_dir, procs):
 
     return: True for success, False for failure
     """
-    recordingTime = ev2Time(recording[0])
+
+    global algorithm
+
+    algorithm_key = recording[0].algorithm()
+
+    if algorithm_key not in algorithms.algorithms:
+        algorithm_key = ""
+
+    # Load private key
+    algorithm = algorithms.algorithms[algorithm_key]()
+
+    if (algorithm.load_keys(privatefile=key_fn) == -1):
+        print("[!] Error loading private key with extension %s" % algorithm.file_extension)
+        sys.exit(1) # Exit if an error occurs
+
+    recordingTime = recording[0].getTimestamp()
 
     # Determine the output's Filename
     rname = str(datetime.fromtimestamp(recordingTime)) + ".mp4"
 
     print(rname + " "*20) # Print the output filename
 
-    firstfile = rec_dir + "/" + recording[0] # Path to first file
+    firstfile = rec_dir + "/" + recording[0].filename # Path to first file
 
     dimensions = getDimension(decrypt(firstfile)) # Get dimension of given recording
 
-    length = ev2Time(recording[-1]) - ev2Time(recording[0]) # Length of time for recording
+    length = recording[-1].getTimestamp() - recording[0].getTimestamp() # Length of time for recording
 
     fps = len(recording) / length # calculate fps
 
@@ -227,19 +245,18 @@ if __name__ in '__main__':
     else:
         key_fn = "private.pem"
 
-    # Load private key
-    aes = AesInterface()
+    if not os.path.isfile(key_fn):
+        print("[!] Please pass a valid filename for the privkey")
+        sys.exit(1)
 
-    if (aes.load_keys(privatefile=key_fn) == -1):
-        sys.exit(1) # Exit if an error occurs
 
     # Get a list of files in the directory
-    files = os.listdir(rec_dir)
-    extFilter(files, "ev")
-    files.sort()
-    
+    frames = Frames()
+    frames.importFrames(rec_dir)
 
-    recordings = splitRecordings(files) # split list with files into individual lists for each recordings
+    recordings = splitRecordings(frames) # split list with files into individual lists for each recordings
+
+    algorithm = None # Used so the variable is accessible globally
 
     # Selection menu
 
@@ -253,7 +270,7 @@ if __name__ in '__main__':
 
         print("Recordings:\n")
         for i in range(len(recordings)):
-            rname = ev2Time(recordings[i][0]) # Convert filename to time format
+            rname = recordings[i][0].getTimestamp() # Convert filename to time format
             rname = datetime.fromtimestamp(rname) # Convert time to timestamp
             print("[%i] %s" %(i,rname))
 
@@ -267,7 +284,7 @@ if __name__ in '__main__':
         
         returnedText = input()
 
-        if returnedText in ["A", "a", "All", "ALL"]: # Decrypt all recordings
+        if returnedText.upper() in "ALL": # Decrypt all recordings
             selected  = range(len(recordings))
 
         else:

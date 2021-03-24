@@ -1,3 +1,9 @@
+"""
+TODO:
+"""
+#######################################
+# Classes                             #
+#######################################
 
 class AesInterface:
     """
@@ -18,6 +24,7 @@ class AesInterface:
         self.AES = AES
         self.PKCS1_OAEP = PKCS1_OAEP
         self.get_random_bytes = get_random_bytes
+        self.file_extension = ".pem"
 
     def load_keys(self, privatefile=None, publicfile=None):
         """
@@ -74,8 +81,12 @@ class AesInterface:
         """
         if self.__private_key is not None:
             
+            # Start reading from first beggining
 
-            head = 0 # Start reading from first beggining
+            if data[:3] == b'aes':
+                head = 3
+            else:
+                head = 0
 
             enc_session_key = data[head:head+self.__private_key.size_in_bytes()] # Read the size of private key starting at head to get session key
             head += self.__private_key.size_in_bytes()
@@ -101,6 +112,17 @@ class AesInterface:
         else:
             print("[ ! ] Please Load Private Key")
             return -1
+
+#######################################
+# Configurations                      #
+#######################################
+
+# Stores a dictionary with a keycode used to identify the algorithm in data files to it's mapped
+algorithms = {
+    '': AesInterface,
+    'aes': AesInterface,
+    'pgp': None,
+}
 
 if __name__ in '__main__':
     aes = AesInterface()
