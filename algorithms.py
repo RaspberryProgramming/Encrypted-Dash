@@ -1,3 +1,4 @@
+import time
 
 class AesInterface:
     """
@@ -24,6 +25,12 @@ class AesInterface:
             try:
                 self.__public_key = self.RSA.import_key(open(publicfile, 'r').read())
                 self.__session_key = self.get_random_bytes(16)
+                # Encrypt the session key with the public RSA key
+                self.cipher_rsa = self.PKCS1_OAEP.new(self.__public_key)
+                self.enc_session_key = self.cipher_rsa.encrypt(self.__session_key)
+
+                # Encrypt the data with the AES session key
+                self.cipher_aes = self.AES.new(self.__session_key, self.AES.MODE_EAX)
             except FileNotFoundError:
                 print("[ ! ] Public Key Not Found")
 
@@ -31,6 +38,7 @@ class AesInterface:
             #cipher_rsa = PKCS1_OAEP.new(private_key)
             try:
                 self.__private_key = self.RSA.import_key(open(privatefile, 'r').read())
+                self.cipher_rsa = self.PKCS1_OAEP.new(self.__private_key)
             except FileNotFoundError:
                 print("[ ! ] Private Key Not Found")
 
@@ -44,15 +52,9 @@ class AesInterface:
         """
         if self.__public_key is not None:
 
-            # Encrypt the session key with the public RSA key
-            cipher_rsa = self.PKCS1_OAEP.new(self.__public_key)
-            enc_session_key = cipher_rsa.encrypt(self.__session_key)
+            ciphertext, tag = self.cipher_aes.encrypt_and_digest(data)
 
-            # Encrypt the data with the AES session key
-            cipher_aes = self.AES.new(self.__session_key, self.AES.MODE_EAX)
-            ciphertext, tag = cipher_aes.encrypt_and_digest(data)
-
-            return enc_session_key + cipher_aes.nonce + tag + ciphertext
+            return self.enc_session_key + self.cipher_aes.nonce + tag + ciphertext
 
         else:
             print("[ ! ] Please Load Public Key")
@@ -60,7 +62,7 @@ class AesInterface:
 
     def decrypt(self, data):
         if self.__private_key is not None:
-            cipher_rsa = self.PKCS1_OAEP.new(self.__private_key)
+            
 
             head = 0 # Start reading from first beggining
 
@@ -76,7 +78,7 @@ class AesInterface:
             ciphertext = data[head:] # Read the rest of the file to get ciphertext
 
             # Decrypt the session key
-            session_key = cipher_rsa.decrypt(enc_session_key)
+            session_key = self.cipher_rsa.decrypt(enc_session_key)
 
 
             # Decrypt the data with the AES session key
