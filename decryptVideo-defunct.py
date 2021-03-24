@@ -1,3 +1,10 @@
+"""
+*** Obseleted ***
+decryptVideo file which can decrypt video captured using Encrypted-Dash software
+
+
+"""
+
 import numpy as np
 import cv2
 from Crypto.PublicKey import RSA
