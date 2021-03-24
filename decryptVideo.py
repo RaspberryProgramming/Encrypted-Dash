@@ -1,23 +1,60 @@
 import numpy as np
 import cv2
-from Crypto.PublicKey import RSA
-from Crypto.Cipher import AES, PKCS1_OAEP
+from frames import Frames
+import algorithms
 import os
 import sys
-import time
 from datetime import datetime
 from tqdm import tqdm
+from multiprocessing import Pool, TimeoutError, cpu_count
+import time
 import argparse
+
+###########################################
+# Functions                               #
+###########################################
 
 def ev2Time(filename):
     """
+    Convert .ev filename format to epoch time
+
     filename: filename in ev format
-    Removes ev format and outputs time as a float
     """
     return float(filename[:-4])
 
-def splitRecordings(files, dist=10.0):
+def extFilter(files, extension):
     """
+    Filters out any files without the selected extension
+    files: list of filenames
+    """
+    remove = []
+    for i in range(len(files)):
+        try:
+            fext = files[i].split(".")[-1] # File extension extracted
+            if fext != extension:
+                remove.append(files[i])
+        except:
+            remove.append(files[i])
+
+    for r in remove:
+        files.remove(r)
+    
+    return files
+
+def decrypt(filename):
+    """
+    """
+    file_in = open(filename, 'rb')
+    plaintext = algorithm.decrypt(file_in.read())
+    file_in.close()
+
+    return plaintext
+
+
+def splitRecordings(frames, dist=10.0):
+    """
+    Splits list of .ev files and splits them based on dist into different recordings
+
     files: list of files using .ev format
     dist: Distance in seconds where each recording must be to split, defaulted to 10.0s
     """
@@ -25,23 +62,27 @@ def splitRecordings(files, dist=10.0):
     recording = -1
     previous = 0.0
     
-    for f in files:
-        t =ev2Time(f) # Convert the filename to Time float
+    while (not frames.empty()):
+        frame = frames.first
+        frames.deleteFirst()
 
-        if (abs(t-previous) > dist): # Check if this is a part of a new recording
+        time = frame.getTimestamp() # Convert the filename to Time float
+
+        if (abs(time-previous) > dist): # Check if this is a part of a new recording
             recording += 1 # Create new recording
             recordings.append([])
 
-        recordings[recording].append(f) # Append the file to it's recording
-        previous = t # Set previous to the time file we just appended
+        recordings[recording].append(frame) # Append the file to it's recording
+        previous = time # Set previous to the time file we just appended
 
     return recordings
-
 
 def getDimension(data):
    """
    Using given jpeg data getDimension will calculate the dimensions of the image.
+   
    data: JPG byte data
+
    return: [height, width]
    """
    # open image for reading in binary mode
@@ -60,143 +101,209 @@ def getDimension(data):
 
    return (width, height)
 
-def decrypt(data, private_key):
+def worker(file_frame):
     """
-    Decrypts jpg data using a given private key
+    Worker function to decrypt and convert .ev to a writable format for multiprocessing.Pool
 
-    data: encrypted jpg byte data
-    private_key: private key used to decrypt jpg data
-    return: jpg byte data
+    file_frame: name of the file to read in and convert
+
+    return: None if there is an error, decrypted frame if successful
     """
 
-    # Retrieve session key, tag, ciphertext and nonce from file
-    enc_session_key, nonce, tag, ciphertext = \
-    [ file_in.read(x) for x in (private_key.size_in_bytes(), 16, 16, -1) ]
+    try:
+        # Grab constant global variables
+
+        data = decrypt(file_frame.path) # Decrypt the file data
+
+        nparr = np.frombuffer(data, np.int8) # Convert jpeg data to numpy array
 
 
-    # Decrypt the session key
-    session_key = cipher_rsa.decrypt(enc_session_key)
+        frame = cv2.imdecode(nparr, flags=1) # decode numpy array
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # convert frame to RGB
 
-    # Decrypt the data with the AES session key
-    cipher_aes = AES.new(session_key, AES.MODE_EAX, nonce)
-    data = cipher_aes.decrypt_and_verify(ciphertext, tag)
+        return frame
 
-    return data
+    except ValueError: # Detects when a frame fails to decrypt
+        return None
 
-######################################################
-# Settings                                           #
-######################################################
+    except TypeError:
+        return None
 
-directory = "output" # Directory where encrypted frames are stored
+def start_pool(recording, rec_dir, procs):
+    """
+    Starts decryption process for a recording using multiprocessing pool
 
-key_fn = "private.pem"
+    recording: list of .ev filenames for recording
+    rec_dir: input directory with recording files
+    procs: Number of processes to run
 
-######################################################
-# Preparations                                       #
-######################################################
+    return: True for success, False for failure
+    """
 
-# Parse Arguments
-parser = argparse.ArgumentParser(description='Retrieve command arguments')
+    global algorithm
 
-parser.add_argument("--all", help="Decrypt all recordings and skip selection menu",
-                    action="store_true")
+    algorithm_key = recording[0].algorithm()
 
-args = parser.parse_args()
+    if algorithm_key not in algorithms.algorithms:
+        algorithm_key = ""
 
-# Argument check
+    # Load private key
+    algorithm = algorithms.algorithms[algorithm_key]()
 
-if args.all:
-    selected = True
+    if (algorithm.load_keys(privatefile=key_fn) == -1):
+        print("[!] Error loading private key with extension %s" % algorithm.file_extension)
+        sys.exit(1) # Exit if an error occurs
 
-# Retrieve the private key
-private_key = RSA.import_key(open("private.pem").read())
-cipher_rsa = PKCS1_OAEP.new(private_key)
+    recordingTime = recording[0].getTimestamp()
 
-# Get a list of files in the directory
-files = os.listdir(directory)
-files.sort()
+    # Determine the output's Filename
+    rname = str(datetime.fromtimestamp(recordingTime)) + ".mp4"
 
-recordings = splitRecordings(files)
+    print(rname + " "*20) # Print the output filename
 
-frameCount = 0 # Used for approximating progress
+    firstfile = rec_dir + "/" + recording[0].filename # Path to first file
 
-if 'selected' not in globals():
-    selected = [] # Stores list of selected recordings
+    dimensions = getDimension(decrypt(firstfile)) # Get dimension of given recording
 
-else:
-    selected = range(len(recordings)) # Skip selection menu
-    
-while (len(selected) < 1):
+    length = recording[-1].getTimestamp() - recording[0].getTimestamp() # Length of time for recording
 
-    print("Recordings:\n")
-    for i in range(len(recordings)):
-        rname = ev2Time(recordings[i][0]) # Convert filename to time format
-        rname = datetime.fromtimestamp(rname) # Convert time to timestamp
-        print("[%i] %s" %(i,rname))
+    fps = len(recording) / length # calculate fps
 
-    # Print menu
-    print("Please select one or more recordings. Type A for all")
-    print("or type the number of the recording you'd like to decrypt")
-    print("If you'd like to decrypt multiple, type in each with a comma")
-    print("between like so")
-    print("'1,5,9'")
-    print("Recordings:", end="")
-    
-    returnedText = input()
+    try:
+        # Create pool of workers to decrypt recording
+        pool = Pool(procs)
+        # Recording is output to results
+        results = pool.imap(worker, recording)
+                
 
-    if returnedText in ["A", "a", "All", "ALL"]: # Decrypt all recordings
-        selected  = range(len(recordings))
+        # Create video writer session
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        out = cv2.VideoWriter(rname, fourcc, fps, dimensions) # output.avi is the output file
+
+        tq = tqdm(total=len(recording), unit="frame") # Create Progress bar
+
+        # Writing each frame to video file
+        for r in results:
+
+            if (r is not None):
+                out.write(r)
+
+            tq.update() # Update Progress Bar
+
+    except KeyboardInterrupt: # If keyboard interrupt activated, the decryption will end
+        pool.terminate()
+        pool.close()
+
+        print("[*] Video Decryption ended early")
+
+        return False
+
+    out.release() # Release writing session
+    return True
+
+if __name__ in '__main__':
+
+    ######################################################
+    # Preparations                                       #
+    ######################################################
+
+    # Parse Arguments
+    parser = argparse.ArgumentParser(description='Retrieve command arguments')
+
+    parser.add_argument("--all", help="Decrypt all recordings and skip selection menu",
+                        action="store_true")
+
+    parser.add_argument("--procs", help="Specifies the number of processes to use",
+                        type=int)
+
+    parser.add_argument("--recdir", help="Specifies where the program will search for .ev frames",
+                        type=str)
+
+    parser.add_argument("--privkey", help="Specifies path to private key .pem file in working directory",
+                        type=str)
+
+    args = parser.parse_args()
+
+    # Argument check
+
+    if args.all:
+        selected = True
+
+    if args.procs:
+        procs = args.procs
+    else:
+        procs = cpu_count()
+
+    if args.recdir:
+        rec_dir = args.recdir
+    else:
+        rec_dir = "output"
+
+    if args.privkey:
+        key_fn = args.privkey
 
     else:
-        try:
-            for s in returnedText.split(','): # Split input by ,
+        key_fn = "private.pem"
 
-                selected.append(int(s)) # append each selected recording to selected list
-        except:
-            print("Input not formatted correctly")
-            selected = [] # Reset selection sequence
+    if not os.path.isfile(key_fn):
+        print("[!] Please pass a valid filename for the privkey")
+        sys.exit(1)
 
-for i in selected: # For each file
-    # Create video writer session
-    x = recordings[i]
-    rname = x[0][:-4] + ".avi"
-    print(rname + " "*20)
 
-    file_in = open(directory + "/" + x[0], "rb") # Read the file as byte data
+    # Get a list of files in the directory
+    frames = Frames()
+    frames.importFrames(rec_dir)
 
-    dimensions = getDimension(decrypt(file_in, private_key)) # Get dimension of given recording
+    recordings = splitRecordings(frames) # split list with files into individual lists for each recordings
 
-    length = ev2Time(x[-1]) - ev2Time(x[0]) # Length of time for recording
-    fps = len(x) / length # calculate fps
+    algorithm = None # Used so the variable is accessible globally
 
-    # Create video writer session
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    out = cv2.VideoWriter(rname, fourcc, fps, dimensions) # output.avi is the output file
+    # Selection menu
 
-    for f in tqdm(x, unit="frame"):
-        frameCount += 1
-        if f.split(".")[-1] == "ev": # check if the file has the correct extension
+    if 'selected' not in globals():
+        selected = [] # Stores list of selected recordings
 
-            file_in = open(directory + "/" + f, "rb") # Read the file as byte data
+    else:
+        selected = range(len(recordings)) # Skip selection menu
+        
+    while (len(selected) < 1): # Loop as long as there haven't been a selected recording
 
+        print("Recordings:\n")
+        for i in range(len(recordings)):
+            rname = recordings[i][0].getTimestamp() # Convert filename to time format
+            rname = datetime.fromtimestamp(rname) # Convert time to timestamp
+            print("[%i] %s" %(i,rname))
+
+        # Print menu
+        print("Please select one or more recordings. Type A for all")
+        print("or type the number of the recording you'd like to decrypt")
+        print("If you'd like to decrypt multiple, type in each with a comma")
+        print("between like so")
+        print("'1,5,9'")
+        print("Recordings:", end="")
+        
+        returnedText = input()
+
+        if returnedText.upper() in "ALL": # Decrypt all recordings
+            selected  = range(len(recordings))
+
+        else:
             try:
-                data = decrypt(file_in, private_key) # Decrypt the file data
+                for s in returnedText.split(','): # Split input by ,
 
-                # Convert jpeg data to numpy array
-                nparr = np.frombuffer(data, np.int8)
-                frame = cv2.imdecode(nparr, flags=1) # decode numpy array
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # convert frame to RGB
+                    selected.append(int(s)) # append each selected recording to selected list
+            except:
+                print("Input not formatted correctly")
+                selected = [] # Reset selection sequence
 
-                out.write(frame) # Write the frame to the output file
+    #####################################################
+    # Running the Code                                  #
+    #####################################################
 
-            except KeyboardInterrupt: # Detects when user ends the program
-                print("[*] Video Decryption ended early")
-                out.release() # Release the video writer
+    for i in selected: # For each file
+        
+        recording = recordings[i] # Copy the current recording to a single variable
+        
+        if (not start_pool(recording, rec_dir, procs)): # Break loop if program failed
+            break
 
-                import sys
-                sys.exit(0)
-
-            except ValueError as e: # Detects when a frame fails to decrypt
-                print("\n[!] Failed to decrypt frame %s\n" % (f))
-            
-    out.release() # Release the video writer
