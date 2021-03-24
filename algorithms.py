@@ -5,6 +5,72 @@ TODO:
 # Classes                             #
 #######################################
 
+class PgpInterface:
+    """
+    Class used to encrypt and decrypt byte data using pgp assymetric encryption
+    """
+    
+    def __init__(self):
+        from pgpy import PGPKey, PGPMessage
+        import getpass
+
+        self.__private_key = None
+        self.__public_key = None
+        self.__password = None
+        self.file_extension = ".asc"
+        self.getpass = getpass
+        self.PGPKey = PGPKey
+        self.PGPMessage = PGPMessage
+
+    def load_keys(self, privatefile=None, publicfile=None):
+        """
+        load_keys: Loads private and public keys into the class to make encryption/decryption more efficient. This must be run before running any other functions in the class
+
+        privatefile: string with the path to the private key file (must have .asc extension)
+        publicfile: string with the path to the public key file (must have .asc extension)
+        """
+        if privatefile != None:
+            self.__private_key,_ = self.PGPKey.from_file(privatefile)
+
+        if publicfile != None:
+            self.__public_key,_ = self.PGPKey.from_file(publicfile)
+
+    def encrypt(self, data):
+        """
+        encrypt - Encrypts data using class' public key
+
+        data: plaintext byte data to be encrypted
+
+        return: If all goes well the encrypted sequence of data is returned. If there are any errors, an error is displayed, and -1 is returned to signify an error.
+        """
+
+        if self.__public_key is not None:
+            message = self.PGPMessage.new(data)
+            enc_message = self.__public_key.encrypt(message)
+            return bytes(enc_message)
+        else:
+            print("[ ! ] Please Load Public Key")
+            return -1
+
+
+    def decrypt(self, data):
+        """
+        decrypt: decryption function which will encrypt any data passed to it
+
+        data: byte data that will be decrypted
+        """
+        if self.__private_key is not None:
+            message = self.PGPMessage.from_blob(data)
+            if self.__password == None:
+                self.__password = self.getpass.getpass()
+
+            with self.__private_key.unlock(self.__password):
+                return self.__private_key.decrypt(message).message
+        else:
+            print("[ ! ] Please Load Private Key")
+            return -1
+
+
 class AesInterface:
     """
     Class that is used to encrypt and decrypt bytedata using Assymetric AES Encryption.
@@ -156,7 +222,7 @@ class AesInterface:
 algorithms = {
     '': AesInterface,
     'aes': AesInterface,
-    'pgp': None,
+    'pgp': PgpInterface,
 }
 
 if __name__ in '__main__':
