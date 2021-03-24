@@ -141,6 +141,7 @@ def start_pool(recording, rec_dir, procs):
     """
 
     global algorithm
+    global key_fn
 
     algorithm_key = recording[0].algorithm()
 
@@ -150,7 +151,13 @@ def start_pool(recording, rec_dir, procs):
     # Load private key
     algorithm = algorithms.algorithms[algorithm_key]()
 
-    if (algorithm.load_keys(privatefile=key_fn) == -1):
+    if key_fn[-4:] != algorithm.file_extension:
+        print("[*] invalid file extension for recording's encryption algorithm. Will default to private%s" % algorithm.file_extension)
+        tmp_key_fn = "private%s" % algorithm.file_extension
+    else:
+        tmp_key_fn = key_fn
+
+    if (algorithm.load_keys(privatefile=tmp_key_fn) == -1):
         print("[!] Error loading private key with extension %s" % algorithm.file_extension)
         sys.exit(1) # Exit if an error occurs
 
