@@ -31,15 +31,25 @@ if __name__ in '__main__':
 
     start = time.time()
     ciphertext = aes.encrypt(original)
+    stop = time.time()
+    print("AES Encrypt: %s" % (str(stop-start)))
+
+    start = time.time()
     plaintext = aes.decrypt(ciphertext)
     stop = time.time()
-    print("AES: %s" % (str(stop-start)))
+    print("AES Decrypt: %s" % (str(stop-start)))
+   
 
     ciphertext = pgp.encrypt(original)
     plaintext = pgp.decrypt(ciphertext)
 
     start = time.time()
     ciphertext = pgp.encrypt(original)
+    stop = time.time()
+    print("PGP Encrypt: %s" % (str(stop-start)))
+
+    start = time.time()
     plaintext = pgp.decrypt(ciphertext)
     stop = time.time()
-    print("PGP: %s" % (str(stop-start)))
+    print("PGP Decrypt: %s" % (str(stop-start)))
+    
