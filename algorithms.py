@@ -29,8 +29,6 @@ class AesInterface:
                 self.cipher_rsa = self.PKCS1_OAEP.new(self.__public_key)
                 self.enc_session_key = self.cipher_rsa.encrypt(self.__session_key)
 
-                # Encrypt the data with the AES session key
-                self.cipher_aes = self.AES.new(self.__session_key, self.AES.MODE_EAX)
             except FileNotFoundError:
                 print("[ ! ] Public Key Not Found")
 
@@ -51,10 +49,12 @@ class AesInterface:
         return: If all goes well the encrypted sequence of data is returned. If there are any errors, an error is displayed, and -1 is returned to signify an error.
         """
         if self.__public_key is not None:
+            # Encrypt the data with the AES session key
+            cipher_aes = self.AES.new(self.__session_key, self.AES.MODE_EAX)
 
-            ciphertext, tag = self.cipher_aes.encrypt_and_digest(data)
+            ciphertext, tag = cipher_aes.encrypt_and_digest(data)
 
-            return self.enc_session_key + self.cipher_aes.nonce + tag + ciphertext
+            return self.enc_session_key + cipher_aes.nonce + tag + ciphertext
 
         else:
             print("[ ! ] Please Load Public Key")
@@ -94,7 +94,9 @@ class AesInterface:
 if __name__ in '__main__':
     aes = AesInterface()
     aes.load_keys(privatefile="private.pem", publicfile="public.pem")
-    ciphertext = aes.encrypt("Data".encode())
+
+    ciphertext = aes.encrypt(text.encode())
+    
     plaintext = aes.decrypt(ciphertext)
     print(ciphertext)
     print(plaintext)
