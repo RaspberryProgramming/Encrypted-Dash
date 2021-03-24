@@ -1,7 +1,7 @@
-import time
 
 class AesInterface:
     """
+    Class that is used to encrypt and decrypt bytedata using Assymetric AES Encryption.
     """
 
     __public_key = None
@@ -20,6 +20,12 @@ class AesInterface:
         self.get_random_bytes = get_random_bytes
 
     def load_keys(self, privatefile=None, publicfile=None):
+        """
+        load_keys: Loads private and public keys into the class to make encryption/decryption more efficient. This must be run before running any other functions in the class
+
+        privatefile: string with the path to the private key file (must have .pem extension)
+        publicfile: string with the path to the public key file (must have .pem extension)
+        """
         if publicfile != None:
             # Load the private key
             try:
@@ -61,6 +67,11 @@ class AesInterface:
             return -1
 
     def decrypt(self, data):
+        """
+        decrypt: decryption function which will encrypt any data passed to it
+
+        data: byte data that will be decrypted
+        """
         if self.__private_key is not None:
             
 
