@@ -1,4 +1,5 @@
 import numpy as np
+import gc
 import cv2
 from frames import Frames
 import algorithms
@@ -158,7 +159,10 @@ def start_pool(recording, rec_dir, procs, recording_info):
 
     firstfile = rec_dir + "/" + recording_info.filename # Path to first file
 
-    dimensions = getDimension(decrypt(firstfile)) # Get dimension of given recording
+    try:
+        dimensions = getDimension(decrypt(firstfile)) # Get dimension of given recording
+    except ValueError:
+        return False
 
     length = recording_info.getTimestamp(filename=recording[-1]) - recording_info.getTimestamp() # Length of time for recording
 
@@ -326,4 +330,6 @@ if __name__ in '__main__':
         
         if (not start_pool(recording, rec_dir, procs, recordings_info[i])): # Break loop if program failed
             break
+
+        gc.collect()
 
