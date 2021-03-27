@@ -23,14 +23,16 @@ class Frames:
 
             return algorithm
 
-        def getTimestamp(self):
+        def getTimestamp(self, filename=None):
             """
             Convert .ev filename format to epoch time
 
             filename: filename in ev format
             """
-
-            return float(self.filename[:-4])
+            if filename == None:
+                return float(self.filename[:-4])
+            else:
+                return float(filename[:-4])
 
         def __str__(self):
             """
