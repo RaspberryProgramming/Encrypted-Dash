@@ -45,8 +45,10 @@ def decrypt(filename):
     """
     """
     file_in = open(filename, 'rb')
-    plaintext = algorithm.decrypt(file_in.read())
+    file_data = file_in.read()
     file_in.close()
+
+    plaintext = algorithm.decrypt(file_data)
 
     return plaintext
 
@@ -57,8 +59,13 @@ def splitRecordings(frames, dist=10.0):
 
     files: list of files using .ev format
     dist: Distance in seconds where each recording must be to split, defaulted to 10.0s
+
+    return: recordings, recordings_info
+        recordings stores a list of recordings and the filenames of each frame
+        recordings_info stores a list of recordings and their frames with more info
     """
     recordings = []
+    recordings_info = []
     recording = -1
     previous = 0.0
     
@@ -71,11 +78,13 @@ def splitRecordings(frames, dist=10.0):
         if (abs(time-previous) > dist): # Check if this is a part of a new recording
             recording += 1 # Create new recording
             recordings.append([])
+            recordings_info.append(frame)
 
-        recordings[recording].append(frame) # Append the file to it's recording
+
+        recordings[recording].append(str(frame)) # Append the file to it's recording
         previous = time # Set previous to the time file we just appended
 
-    return recordings
+    return recordings, recordings_info
 
 def getDimension(data):
    """
@@ -113,7 +122,7 @@ def worker(file_frame):
     try:
         # Grab constant global variables
 
-        data = decrypt(file_frame.path) # Decrypt the file data
+        data = decrypt(rec_dir + "/" + file_frame) # Decrypt the file data
 
         nparr = np.frombuffer(data, np.int8) # Convert jpeg data to numpy array
 
@@ -129,7 +138,7 @@ def worker(file_frame):
     except TypeError:
         return None
 
-def start_pool(recording, rec_dir, procs):
+def start_pool(recording, rec_dir, procs, recording_info):
     """
     Starts decryption process for a recording using multiprocessing pool
 
@@ -140,54 +149,32 @@ def start_pool(recording, rec_dir, procs):
     return: True for success, False for failure
     """
 
-    global algorithm
-    global key_fn
-
-    algorithm_key = recording[0].algorithm()
-
-    if algorithm_key not in algorithms.algorithms:
-        algorithm_key = ""
-
-    # Load private key
-    algorithm = algorithms.algorithms[algorithm_key]()
-
-    if key_fn[-4:] != algorithm.file_extension:
-        print("[*] invalid file extension for recording's encryption algorithm. Will default to private%s" % algorithm.file_extension)
-        tmp_key_fn = "private%s" % algorithm.file_extension
-    else:
-        tmp_key_fn = key_fn
-
-    if (algorithm.load_keys(privatefile=tmp_key_fn) == -1):
-        print("[!] Error loading private key with extension %s" % algorithm.file_extension)
-        sys.exit(1) # Exit if an error occurs
-
-    recordingTime = recording[0].getTimestamp()
+    recordingTime = recording_info.getTimestamp()
 
     # Determine the output's Filename
     rname = str(datetime.fromtimestamp(recordingTime)) + ".mp4"
 
     print(rname + " "*20) # Print the output filename
 
-    firstfile = rec_dir + "/" + recording[0].filename # Path to first file
+    firstfile = rec_dir + "/" + recording_info.filename # Path to first file
 
     dimensions = getDimension(decrypt(firstfile)) # Get dimension of given recording
 
-    length = recording[-1].getTimestamp() - recording[0].getTimestamp() # Length of time for recording
+    length = recording_info.getTimestamp(filename=recording[-1]) - recording_info.getTimestamp() # Length of time for recording
 
     fps = len(recording) / length # calculate fps
+
+    # Create video writer session
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter(rname, fourcc, fps, dimensions) # output.avi is the output file
+
+    tq = tqdm(total=len(recording), unit="frame") # Create Progress bar
 
     try:
         # Create pool of workers to decrypt recording
         pool = Pool(procs)
         # Recording is output to results
         results = pool.imap(worker, recording)
-                
-
-        # Create video writer session
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter(rname, fourcc, fps, dimensions) # output.avi is the output file
-
-        tq = tqdm(total=len(recording), unit="frame") # Create Progress bar
 
         # Writing each frame to video file
         for r in results:
@@ -239,7 +226,7 @@ if __name__ in '__main__':
     if args.procs:
         procs = args.procs
     else:
-        procs = cpu_count()
+        procs = cpu_count()-1
 
     if args.recdir:
         rec_dir = args.recdir
@@ -256,12 +243,14 @@ if __name__ in '__main__':
         print("[!] Please pass a valid filename for the privkey")
         sys.exit(1)
 
+    # Set new recursion limit
+    sys.setrecursionlimit(10000)
 
     # Get a list of files in the directory
     frames = Frames()
     frames.importFrames(rec_dir)
 
-    recordings = splitRecordings(frames) # split list with files into individual lists for each recordings
+    recordings, recordings_info = splitRecordings(frames) # split list with files into individual lists for each recordings
 
     algorithm = None # Used so the variable is accessible globally
 
@@ -277,7 +266,7 @@ if __name__ in '__main__':
 
         print("Recordings:\n")
         for i in range(len(recordings)):
-            rname = recordings[i][0].getTimestamp() # Convert filename to time format
+            rname = recordings_info[i].getTimestamp() # Convert filename to time format
             rname = datetime.fromtimestamp(rname) # Convert time to timestamp
             print("[%i] %s" %(i,rname))
 
@@ -311,6 +300,30 @@ if __name__ in '__main__':
         
         recording = recordings[i] # Copy the current recording to a single variable
         
-        if (not start_pool(recording, rec_dir, procs)): # Break loop if program failed
+
+        # Extract algorithm key
+        algorithm_key = recordings_info[i].algorithm()
+
+        if algorithm_key not in algorithms.algorithms: # If non exists set to default
+            algorithm_key = ""
+
+        algorithm = algorithms.algorithms[algorithm_key]() # Load algorithm into algorithm variable
+
+        # Determine key filename        
+
+        if key_fn[-4:] != algorithm.file_extension: # If the key does not match the algorithm's file extension
+            print("[*] invalid file extension for recording's encryption algorithm. Will default to private%s" % algorithm.file_extension)
+            tmp_key_fn = "private%s" % algorithm.file_extension # set temporary key to private.EXT
+        else:
+            tmp_key_fn = key_fn # copy key_fn to tmp_key_fn
+
+        # Load Private Key
+        if (algorithm.load_keys(privatefile=tmp_key_fn) == -1): # if the keys don't exist
+            print("[!] Error loading private key with extension %s" % algorithm.file_extension)
+            sys.exit(1) # Exit if an error occurs
+
+        # Generate String list of frames
+        
+        if (not start_pool(recording, rec_dir, procs, recordings_info[i])): # Break loop if program failed
             break
 
